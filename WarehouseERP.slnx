@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WarehouseERP.Api/WarehouseERP.Api.csproj" />
+    <Project Path="src/WarehouseERP.Application/WarehouseERP.Application.csproj" />
+    <Project Path="src/WarehouseERP.Blazor/WarehouseERP.Blazor.csproj" />
+    <Project Path="src/WarehouseERP.Domain/WarehouseERP.Domain.csproj" />
+    <Project Path="src/WarehouseERP.Infrastructure/WarehouseERP.Infrastructure.csproj" />
+    <Project Path="src/WarehouseERP.Shared/WarehouseERP.Shared.csproj" />
+  </Folder>
+</Solution>
