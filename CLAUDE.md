@@ -19,6 +19,16 @@ This project should prioritize maintainability, readability, and good architectu
 
 ---
 
+# Project Status
+
+The current implementation status and next planned work are documented in:
+
+`docs/project-status.md`
+
+Read this file before planning or implementing major changes.
+
+Update it after completing a major layer or milestone so that it remains accurate.
+
 # Project Philosophy
 
 This project is intended to demonstrate enterprise software development practices.
