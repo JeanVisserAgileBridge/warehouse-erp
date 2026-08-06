@@ -47,13 +47,31 @@ Groups related products.
 
 Initial properties:
 
-* Id
-* Name
-* Description
-* IsActive
+- Id
+- Name
+- Description
+- IsActive
 
-A Category can contain multiple Products.
+Business rules:
 
+- Id uses `Guid`.
+- Name is required.
+- Name cannot contain only whitespace.
+- Name cannot exceed 100 characters.
+- Description is optional.
+- Description cannot exceed 500 characters.
+- New Categories are active by default.
+- Categories are deactivated rather than physically deleted.
+- An inactive Category cannot be assigned to a new Product.
+- Category name uniqueness is enforced by the Application layer because it requires access to persisted Categories.
+
+Behaviours:
+
+- Create
+- Rename
+- UpdateDescription
+- Activate
+- Deactivate
 ---
 
 ## Warehouses
