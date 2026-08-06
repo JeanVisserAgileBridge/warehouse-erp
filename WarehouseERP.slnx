@@ -7,4 +7,7 @@
     <Project Path="src/WarehouseERP.Infrastructure/WarehouseERP.Infrastructure.csproj" />
     <Project Path="src/WarehouseERP.Shared/WarehouseERP.Shared.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WarehouseERP.Domain.Tests/WarehouseERP.Domain.Tests.csproj" />
+  </Folder>
 </Solution>
