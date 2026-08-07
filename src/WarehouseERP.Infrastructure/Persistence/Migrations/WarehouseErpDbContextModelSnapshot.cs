@@ -25,7 +25,6 @@ namespace WarehouseERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("WarehouseERP.Domain.ProductCatalog.Category", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
@@ -52,7 +51,6 @@ namespace WarehouseERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("WarehouseERP.Domain.ProductCatalog.Product", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CategoryId")

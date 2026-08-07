@@ -12,6 +12,9 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.HasKey(category => category.Id);
 
+        builder.Property(category => category.Id)
+            .ValueGeneratedNever();
+
         builder.Property(category => category.Name)
             .HasMaxLength(Category.MaxNameLength)
             .UseCollation("SQL_Latin1_General_CP1_CI_AS")

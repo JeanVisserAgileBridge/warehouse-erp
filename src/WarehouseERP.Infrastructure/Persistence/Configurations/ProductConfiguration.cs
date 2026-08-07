@@ -15,6 +15,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasKey(product => product.Id);
 
+        builder.Property(product => product.Id)
+            .ValueGeneratedNever();
+
         builder.Property(product => product.Sku)
             .HasMaxLength(Product.MaxSkuLength)
             .UseCollation("SQL_Latin1_General_CP1_CI_AS")

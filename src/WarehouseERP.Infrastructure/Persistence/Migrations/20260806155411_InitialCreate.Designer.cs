@@ -12,7 +12,7 @@ using WarehouseERP.Infrastructure.Persistence;
 namespace WarehouseERP.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WarehouseErpDbContext))]
-    [Migration("20260806154646_InitialCreate")]
+    [Migration("20260806155411_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -28,7 +28,6 @@ namespace WarehouseERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("WarehouseERP.Domain.ProductCatalog.Category", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
@@ -55,7 +54,6 @@ namespace WarehouseERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("WarehouseERP.Domain.ProductCatalog.Product", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CategoryId")
