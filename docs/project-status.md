@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Infrastructure implementation.
+API implementation.
 
 ---
 
@@ -21,6 +21,18 @@ Infrastructure implementation.
 - AI development workflow
 
 ---
+
+## API
+
+Implemented:
+
+- API-to-Infrastructure dependency injection
+- SQL Server connection configuration
+- EF Core migrations
+- WarehouseERP database
+- Swagger UI
+- Category API endpoints
+- Global API exception handling
 
 ## Domain Layer
 
@@ -147,13 +159,14 @@ Implemented:
 
 # Immediate Next Task
 
-Complete the Infrastructure setup by:
+Implement the Product API endpoints and verify Product CRUD end-to-end through Swagger and SQL Server.
 
-- Register AddInfrastructure() in the API.
-- Add the SQL Server connection string.
-- Create the first EF Core migration.
-- Create the WarehouseERP database.
-- Verify Category and Product tables.
+After Product API is complete:
+
+- Build the Blazor frontend
+- Add Dapper dashboard reporting
+- Add Azure Function
+- Final README and demo preparation
 
 ---
 
