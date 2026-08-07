@@ -1,0 +1,81 @@
+@page "/categories/{Id:guid}/edit"
+@inject ICategoryApiClient CategoryApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Category</PageTitle>
+
+<h1>Edit Category</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading category..." />
+}
+else if (_model is not null)
+{
+    <CategoryForm Model="_model" SubmitLabel="Save" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private CategoryFormModel? _model;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var category = await CategoryApiClient.GetByIdAsync(Id);
+
+            _model = new CategoryFormModel
+            {
+                Name = category.Name,
+                Description = category.Description
+            };
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateCategoryRequest
+            {
+                Name = _model.Name,
+                Description = _model.Description
+            };
+
+            await CategoryApiClient.UpdateAsync(Id, request);
+            NavigationManager.NavigateTo("categories");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

@@ -1,4 +1,4 @@
-namespace WarehouseERP.Api.Contracts.Categories;
+namespace WarehouseERP.Shared.Contracts.Categories;
 
 public sealed class CreateCategoryRequest
 {

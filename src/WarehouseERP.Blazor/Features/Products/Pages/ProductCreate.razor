@@ -1,0 +1,78 @@
+@page "/products/create"
+@inject IProductApiClient ProductApiClient
+@inject ICategoryApiClient CategoryApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Product</PageTitle>
+
+<h1>New Product</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading categories..." />
+}
+else
+{
+    <ProductForm Model="_model" Categories="_categories" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    private readonly ProductFormModel _model = new();
+    private IReadOnlyList<CategoryDto> _categories = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var categories = await CategoryApiClient.GetAllAsync();
+            _categories = categories.Where(c => c.IsActive).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model.CategoryId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateProductRequest
+            {
+                Sku = _model.Sku,
+                Name = _model.Name,
+                Description = _model.Description,
+                CategoryId = _model.CategoryId.Value,
+                UnitPrice = _model.UnitPrice
+            };
+
+            await ProductApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("products");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

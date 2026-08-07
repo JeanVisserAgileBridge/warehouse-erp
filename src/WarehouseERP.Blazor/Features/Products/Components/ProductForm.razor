@@ -1,0 +1,63 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="productSku" class="form-label">SKU</label>
+        <InputText id="productSku" class="form-control" @bind-Value="Model.Sku" />
+        <ValidationMessage For="() => Model.Sku" />
+    </div>
+
+    <div class="mb-3">
+        <label for="productName" class="form-label">Name</label>
+        <InputText id="productName" class="form-control" @bind-Value="Model.Name" />
+        <ValidationMessage For="() => Model.Name" />
+    </div>
+
+    <div class="mb-3">
+        <label for="productDescription" class="form-label">Description</label>
+        <InputTextArea id="productDescription" class="form-control" @bind-Value="Model.Description" />
+        <ValidationMessage For="() => Model.Description" />
+    </div>
+
+    <div class="mb-3">
+        <label for="productCategory" class="form-label">Category</label>
+        <InputSelect id="productCategory" class="form-select" @bind-Value="Model.CategoryId">
+            <option value="">Select a category...</option>
+            @foreach (var category in Categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => Model.CategoryId" />
+    </div>
+
+    <div class="mb-3">
+        <label for="productUnitPrice" class="form-label">Unit Price</label>
+        <InputNumber id="productUnitPrice" class="form-control" @bind-Value="Model.UnitPrice" />
+        <ValidationMessage For="() => Model.UnitPrice" />
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">@SubmitLabel</button>
+        <a class="btn btn-secondary" href="products">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductFormModel Model { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CategoryDto> Categories { get; set; } = [];
+
+    [Parameter]
+    public string SubmitLabel { get; set; } = "Save";
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

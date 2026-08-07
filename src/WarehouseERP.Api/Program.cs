@@ -2,6 +2,8 @@ using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Api.Middleware;
 using WarehouseERP.Infrastructure.DependencyInjection;
 
+const string BlazorClientCorsPolicy = "BlazorClient";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,6 +16,18 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(BlazorClientCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5096",
+                "https://localhost:7210")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -27,6 +41,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseCors(BlazorClientCorsPolicy);
 app.MapControllers();
 
 var summaries = new[]

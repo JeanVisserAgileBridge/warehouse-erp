@@ -1,4 +1,4 @@
-namespace WarehouseERP.Api.Contracts.Products;
+namespace WarehouseERP.Shared.Contracts.Products;
 
 public sealed class CreateProductRequest
 {

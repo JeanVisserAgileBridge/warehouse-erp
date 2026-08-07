@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Products;
 using WarehouseERP.Application.Common;
-using WarehouseERP.Application.ProductCatalog.Products;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.ActivateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.CreateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.DeactivateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.UpdateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProductById;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProducts;
+using WarehouseERP.Shared.Contracts.Products;
+using ApplicationProductDto = WarehouseERP.Application.ProductCatalog.Products.ProductDto;
 
 namespace WarehouseERP.Api.Controllers;
 
@@ -15,20 +16,20 @@ namespace WarehouseERP.Api.Controllers;
 [Route("api/products")]
 public sealed class ProductsController : ControllerBase
 {
-    private readonly IQueryHandler<GetProductsQuery, IReadOnlyList<ProductDto>> _getProducts;
-    private readonly IQueryHandler<GetProductByIdQuery, ProductDto> _getProductById;
-    private readonly ICommandHandler<CreateProductCommand, ProductDto> _createProduct;
-    private readonly ICommandHandler<UpdateProductCommand, ProductDto> _updateProduct;
-    private readonly ICommandHandler<ActivateProductCommand, ProductDto> _activateProduct;
-    private readonly ICommandHandler<DeactivateProductCommand, ProductDto> _deactivateProduct;
+    private readonly IQueryHandler<GetProductsQuery, IReadOnlyList<ApplicationProductDto>> _getProducts;
+    private readonly IQueryHandler<GetProductByIdQuery, ApplicationProductDto> _getProductById;
+    private readonly ICommandHandler<CreateProductCommand, ApplicationProductDto> _createProduct;
+    private readonly ICommandHandler<UpdateProductCommand, ApplicationProductDto> _updateProduct;
+    private readonly ICommandHandler<ActivateProductCommand, ApplicationProductDto> _activateProduct;
+    private readonly ICommandHandler<DeactivateProductCommand, ApplicationProductDto> _deactivateProduct;
 
     public ProductsController(
-        IQueryHandler<GetProductsQuery, IReadOnlyList<ProductDto>> getProducts,
-        IQueryHandler<GetProductByIdQuery, ProductDto> getProductById,
-        ICommandHandler<CreateProductCommand, ProductDto> createProduct,
-        ICommandHandler<UpdateProductCommand, ProductDto> updateProduct,
-        ICommandHandler<ActivateProductCommand, ProductDto> activateProduct,
-        ICommandHandler<DeactivateProductCommand, ProductDto> deactivateProduct)
+        IQueryHandler<GetProductsQuery, IReadOnlyList<ApplicationProductDto>> getProducts,
+        IQueryHandler<GetProductByIdQuery, ApplicationProductDto> getProductById,
+        ICommandHandler<CreateProductCommand, ApplicationProductDto> createProduct,
+        ICommandHandler<UpdateProductCommand, ApplicationProductDto> updateProduct,
+        ICommandHandler<ActivateProductCommand, ApplicationProductDto> activateProduct,
+        ICommandHandler<DeactivateProductCommand, ApplicationProductDto> deactivateProduct)
     {
         _getProducts = getProducts;
         _getProductById = getProductById;
@@ -43,7 +44,7 @@ public sealed class ProductsController : ControllerBase
     {
         var products = await _getProducts.HandleAsync(new GetProductsQuery(), cancellationToken);
 
-        return Ok(products);
+        return Ok(products.ToContract());
     }
 
     [HttpGet("{id:guid}")]
@@ -51,7 +52,7 @@ public sealed class ProductsController : ControllerBase
     {
         var product = await _getProductById.HandleAsync(new GetProductByIdQuery { Id = id }, cancellationToken);
 
-        return Ok(product);
+        return Ok(product.ToContract());
     }
 
     [HttpPost]
@@ -67,8 +68,9 @@ public sealed class ProductsController : ControllerBase
         };
 
         var product = await _createProduct.HandleAsync(command, cancellationToken);
+        var contract = product.ToContract();
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        return CreatedAtAction(nameof(GetById), new { id = contract.Id }, contract);
     }
 
     [HttpPut("{id:guid}")]
@@ -86,7 +88,7 @@ public sealed class ProductsController : ControllerBase
 
         var product = await _updateProduct.HandleAsync(command, cancellationToken);
 
-        return Ok(product);
+        return Ok(product.ToContract());
     }
 
     [HttpPatch("{id:guid}/activate")]
@@ -94,7 +96,7 @@ public sealed class ProductsController : ControllerBase
     {
         var product = await _activateProduct.HandleAsync(new ActivateProductCommand { Id = id }, cancellationToken);
 
-        return Ok(product);
+        return Ok(product.ToContract());
     }
 
     [HttpPatch("{id:guid}/deactivate")]
@@ -102,6 +104,6 @@ public sealed class ProductsController : ControllerBase
     {
         var product = await _deactivateProduct.HandleAsync(new DeactivateProductCommand { Id = id }, cancellationToken);
 
-        return Ok(product);
+        return Ok(product.ToContract());
     }
 }

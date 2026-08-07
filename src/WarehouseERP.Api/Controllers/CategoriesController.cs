@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Categories;
 using WarehouseERP.Application.Common;
-using WarehouseERP.Application.ProductCatalog.Categories;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.ActivateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.CreateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.DeactivateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.UpdateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Queries.GetCategories;
 using WarehouseERP.Application.ProductCatalog.Categories.Queries.GetCategoryById;
+using WarehouseERP.Shared.Contracts.Categories;
+using ApplicationCategoryDto = WarehouseERP.Application.ProductCatalog.Categories.CategoryDto;
 
 namespace WarehouseERP.Api.Controllers;
 
@@ -15,20 +16,20 @@ namespace WarehouseERP.Api.Controllers;
 [Route("api/categories")]
 public sealed class CategoriesController : ControllerBase
 {
-    private readonly IQueryHandler<GetCategoriesQuery, IReadOnlyList<CategoryDto>> _getCategories;
-    private readonly IQueryHandler<GetCategoryByIdQuery, CategoryDto> _getCategoryById;
-    private readonly ICommandHandler<CreateCategoryCommand, CategoryDto> _createCategory;
-    private readonly ICommandHandler<UpdateCategoryCommand, CategoryDto> _updateCategory;
-    private readonly ICommandHandler<ActivateCategoryCommand, CategoryDto> _activateCategory;
-    private readonly ICommandHandler<DeactivateCategoryCommand, CategoryDto> _deactivateCategory;
+    private readonly IQueryHandler<GetCategoriesQuery, IReadOnlyList<ApplicationCategoryDto>> _getCategories;
+    private readonly IQueryHandler<GetCategoryByIdQuery, ApplicationCategoryDto> _getCategoryById;
+    private readonly ICommandHandler<CreateCategoryCommand, ApplicationCategoryDto> _createCategory;
+    private readonly ICommandHandler<UpdateCategoryCommand, ApplicationCategoryDto> _updateCategory;
+    private readonly ICommandHandler<ActivateCategoryCommand, ApplicationCategoryDto> _activateCategory;
+    private readonly ICommandHandler<DeactivateCategoryCommand, ApplicationCategoryDto> _deactivateCategory;
 
     public CategoriesController(
-        IQueryHandler<GetCategoriesQuery, IReadOnlyList<CategoryDto>> getCategories,
-        IQueryHandler<GetCategoryByIdQuery, CategoryDto> getCategoryById,
-        ICommandHandler<CreateCategoryCommand, CategoryDto> createCategory,
-        ICommandHandler<UpdateCategoryCommand, CategoryDto> updateCategory,
-        ICommandHandler<ActivateCategoryCommand, CategoryDto> activateCategory,
-        ICommandHandler<DeactivateCategoryCommand, CategoryDto> deactivateCategory)
+        IQueryHandler<GetCategoriesQuery, IReadOnlyList<ApplicationCategoryDto>> getCategories,
+        IQueryHandler<GetCategoryByIdQuery, ApplicationCategoryDto> getCategoryById,
+        ICommandHandler<CreateCategoryCommand, ApplicationCategoryDto> createCategory,
+        ICommandHandler<UpdateCategoryCommand, ApplicationCategoryDto> updateCategory,
+        ICommandHandler<ActivateCategoryCommand, ApplicationCategoryDto> activateCategory,
+        ICommandHandler<DeactivateCategoryCommand, ApplicationCategoryDto> deactivateCategory)
     {
         _getCategories = getCategories;
         _getCategoryById = getCategoryById;
@@ -43,7 +44,7 @@ public sealed class CategoriesController : ControllerBase
     {
         var categories = await _getCategories.HandleAsync(new GetCategoriesQuery(), cancellationToken);
 
-        return Ok(categories);
+        return Ok(categories.ToContract());
     }
 
     [HttpGet("{id:guid}")]
@@ -51,7 +52,7 @@ public sealed class CategoriesController : ControllerBase
     {
         var category = await _getCategoryById.HandleAsync(new GetCategoryByIdQuery { Id = id }, cancellationToken);
 
-        return Ok(category);
+        return Ok(category.ToContract());
     }
 
     [HttpPost]
@@ -64,8 +65,9 @@ public sealed class CategoriesController : ControllerBase
         };
 
         var category = await _createCategory.HandleAsync(command, cancellationToken);
+        var contract = category.ToContract();
 
-        return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
+        return CreatedAtAction(nameof(GetById), new { id = contract.Id }, contract);
     }
 
     [HttpPut("{id:guid}")]
@@ -80,7 +82,7 @@ public sealed class CategoriesController : ControllerBase
 
         var category = await _updateCategory.HandleAsync(command, cancellationToken);
 
-        return Ok(category);
+        return Ok(category.ToContract());
     }
 
     [HttpPatch("{id:guid}/activate")]
@@ -88,7 +90,7 @@ public sealed class CategoriesController : ControllerBase
     {
         var category = await _activateCategory.HandleAsync(new ActivateCategoryCommand { Id = id }, cancellationToken);
 
-        return Ok(category);
+        return Ok(category.ToContract());
     }
 
     [HttpPatch("{id:guid}/deactivate")]
@@ -96,6 +98,6 @@ public sealed class CategoriesController : ControllerBase
     {
         var category = await _deactivateCategory.HandleAsync(new DeactivateCategoryCommand { Id = id }, cancellationToken);
 
-        return Ok(category);
+        return Ok(category.ToContract());
     }
 }

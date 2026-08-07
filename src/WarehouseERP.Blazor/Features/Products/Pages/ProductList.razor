@@ -1,0 +1,130 @@
+@page "/products"
+@inject IProductApiClient ProductApiClient
+@inject ICategoryApiClient CategoryApiClient
+
+<PageTitle>Products</PageTitle>
+
+<h1>Products</h1>
+
+<a class="btn btn-primary mb-3" href="products/create">New Product</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading products..." />
+}
+else if (_products is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Unit Price</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in _products)
+            {
+                <tr>
+                    <td>@product.Sku</td>
+                    <td>@product.Name</td>
+                    <td>@GetCategoryName(product.CategoryId)</td>
+                    <td>@product.UnitPrice.ToString("C")</td>
+                    <td>
+                        @if (product.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"products/{product.Id}/edit")">Edit</a>
+                        @if (product.IsActive)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(product.Id)">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(product.Id)">Activate</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<ProductDto>? _products;
+    private Dictionary<Guid, string> _categoryNamesById = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var productsTask = ProductApiClient.GetAllAsync();
+            var categoriesTask = CategoryApiClient.GetAllAsync();
+
+            await Task.WhenAll(productsTask, categoriesTask);
+
+            _products = productsTask.Result;
+            _categoryNamesById = categoriesTask.Result.ToDictionary(c => c.Id, c => c.Name);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetCategoryName(Guid categoryId) =>
+        _categoryNamesById.TryGetValue(categoryId, out var name) ? name : "Unknown";
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await ProductApiClient.ActivateAsync(id);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await ProductApiClient.DeactivateAsync(id);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

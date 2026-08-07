@@ -145,6 +145,37 @@ Implemented:
 
 ---
 
+## Shared Contracts
+
+Implemented:
+
+- CategoryDto, CreateCategoryRequest, UpdateCategoryRequest
+- ProductDto, CreateProductRequest, UpdateProductRequest
+
+The Api project now takes these Shared contracts directly as controller request/response types (mapped from Application DTOs at the controller boundary), so Blazor and the Api consume the same wire contracts instead of duplicated shapes.
+
+---
+
+## Blazor WebAssembly Frontend
+
+Implemented:
+
+- Feature-first folder structure (`Features/{Feature}/Pages|Components|Services`)
+- Application layout and grouped navigation (`Shared/Layout`, with `NavSection` for scalable module grouping)
+- Reusable `LoadingIndicator` and `ErrorAlert` components (`Shared/Components`)
+- Typed HTTP client infrastructure (`ApiOptions` configuration, `ApiException`, `HttpResponseMessageExtensions`)
+- Categories feature: list, create, edit, activate, deactivate
+- Products feature: list, create, edit, activate, deactivate, category selection
+
+Includes:
+
+- Configuration-driven API base URL (`wwwroot/appsettings.json`)
+- CORS enabled on the Api for the Blazor dev origins
+
+Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
+
+---
+
 # Current Architecture Decisions
 
 - Domain has no external dependencies.
@@ -162,14 +193,9 @@ Implemented:
 
 # Immediate Next Task
 
-Implement the Blazor WebAssembly frontend.
+Categories and Products are complete in the Blazor frontend. Remaining Blazor work:
 
-Build:
-
-- Dashboard
-- Categories page
-- Products page
-- HTTP API clients
+- Dashboard page
 
 After Blazor:
 
@@ -214,9 +240,6 @@ Prefer reusable layouts, API clients, components, feature folders, and shared UI
 ## Blazor
 
 - Dashboard
-- Categories
-- Products
-- API integration
 
 ## Dapper
 

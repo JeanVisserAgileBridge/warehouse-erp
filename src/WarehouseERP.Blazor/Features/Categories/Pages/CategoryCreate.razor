@@ -1,0 +1,43 @@
+@page "/categories/create"
+@inject ICategoryApiClient CategoryApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Category</PageTitle>
+
+<h1>New Category</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<CategoryForm Model="_model" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+
+@code {
+    private readonly CategoryFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateCategoryRequest
+            {
+                Name = _model.Name,
+                Description = _model.Description
+            };
+
+            await CategoryApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("categories");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

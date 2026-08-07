@@ -1,0 +1,94 @@
+@page "/products/{Id:guid}/edit"
+@inject IProductApiClient ProductApiClient
+@inject ICategoryApiClient CategoryApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Product</PageTitle>
+
+<h1>Edit Product</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading product..." />
+}
+else if (_model is not null)
+{
+    <ProductForm Model="_model" Categories="_categories" SubmitLabel="Save" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ProductFormModel? _model;
+    private IReadOnlyList<CategoryDto> _categories = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var product = await ProductApiClient.GetByIdAsync(Id);
+            var categories = await CategoryApiClient.GetAllAsync();
+
+            _categories = categories
+                .Where(c => c.IsActive || c.Id == product.CategoryId)
+                .ToList();
+
+            _model = new ProductFormModel
+            {
+                Sku = product.Sku,
+                Name = product.Name,
+                Description = product.Description,
+                CategoryId = product.CategoryId,
+                UnitPrice = product.UnitPrice
+            };
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model is null || _model.CategoryId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateProductRequest
+            {
+                Sku = _model.Sku,
+                Name = _model.Name,
+                Description = _model.Description,
+                CategoryId = _model.CategoryId.Value,
+                UnitPrice = _model.UnitPrice
+            };
+
+            await ProductApiClient.UpdateAsync(Id, request);
+            NavigationManager.NavigateTo("products");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
