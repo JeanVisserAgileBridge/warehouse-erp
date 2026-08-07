@@ -1,0 +1,14 @@
+<div class="card">
+    <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">@Label</h6>
+        <p class="card-text fs-2 mb-0">@Value</p>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+}

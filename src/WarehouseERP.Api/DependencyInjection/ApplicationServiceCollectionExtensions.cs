@@ -13,6 +13,8 @@ using WarehouseERP.Application.ProductCatalog.Products.Commands.DeactivateProduc
 using WarehouseERP.Application.ProductCatalog.Products.Commands.UpdateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProductById;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProducts;
+using WarehouseERP.Application.Reporting.Dashboard.Queries.GetDashboardSummary;
+using ApplicationDashboardSummary = WarehouseERP.Application.Reporting.Dashboard.DashboardSummary;
 
 namespace WarehouseERP.Api.DependencyInjection;
 
@@ -33,6 +35,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<UpdateProductCommand, ProductDto>, UpdateProductCommandHandler>();
         services.AddScoped<ICommandHandler<ActivateProductCommand, ProductDto>, ActivateProductCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateProductCommand, ProductDto>, DeactivateProductCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetDashboardSummaryQuery, ApplicationDashboardSummary>, GetDashboardSummaryQueryHandler>();
 
         return services;
     }

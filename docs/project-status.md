@@ -124,6 +124,16 @@ Includes:
 - Repository interface
 - Application tests
 
+### Dashboard Reporting Feature
+
+- Get Dashboard Summary
+
+Includes:
+
+- Query and handler (`GetDashboardSummaryQuery`)
+- `IDashboardQueryService` abstraction (implemented with Dapper in Infrastructure)
+- `DashboardSummary` DTO
+
 ---
 
 ## Infrastructure Layer
@@ -142,6 +152,7 @@ Implemented:
 - Explicit case-insensitive SQL Server collation for:
   - Category.Name
   - Product.Sku
+- Dapper (`DashboardQueryService`) for read-only dashboard reporting, using a dedicated `SqlConnection` built from the same `WarehouseErpDatabase` connection string as EF Core. EF Core remains the only data access technique for transactional persistence.
 
 ---
 
@@ -151,6 +162,7 @@ Implemented:
 
 - CategoryDto, CreateCategoryRequest, UpdateCategoryRequest
 - ProductDto, CreateProductRequest, UpdateProductRequest
+- DashboardSummary
 
 The Api project now takes these Shared contracts directly as controller request/response types (mapped from Application DTOs at the controller boundary), so Blazor and the Api consume the same wire contracts instead of duplicated shapes.
 
@@ -166,6 +178,7 @@ Implemented:
 - Typed HTTP client infrastructure (`ApiOptions` configuration, `ApiException`, `HttpResponseMessageExtensions`)
 - Categories feature: list, create, edit, activate, deactivate
 - Products feature: list, create, edit, activate, deactivate, category selection
+- Dashboard feature: summary cards (Total/Active Categories, Total/Active/Inactive Products) at the root route, backed by `GET /api/dashboard`; `StatCard` in `Shared/Components` is reusable for future metrics
 
 Includes:
 
@@ -184,7 +197,7 @@ Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
 - API is the composition root.
 - Blazor communicates with the API over HTTP.
 - EF Core is used for transactional persistence.
-- Dapper will be used for reporting and read-only queries.
+- Dapper is used for reporting and read-only queries (see Dashboard).
 - CQRS is implemented using plain C# handlers.
 - Generic repositories are intentionally avoided.
 - SQL Server is the system database.
@@ -193,13 +206,10 @@ Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
 
 # Immediate Next Task
 
-Categories and Products are complete in the Blazor frontend. Remaining Blazor work:
+Categories, Products, and the initial Dashboard reporting slice (Dapper-based) are complete in the Blazor frontend and API.
 
-- Dashboard page
+Next up:
 
-After Blazor:
-
-- Add Dapper dashboard reporting
 - Add Azure Function
 - Final README and demo preparation
 
@@ -237,14 +247,9 @@ Prefer reusable layouts, API clients, components, feature folders, and shared UI
 - Global exception handling
 - Swagger verification
 
-## Blazor
-
-- Dashboard
-
 ## Dapper
 
-- Dashboard reporting
-- Inventory summary
+- Inventory summary (Dashboard reporting for Categories/Products is done; additional metrics such as inventory value, low stock, purchase orders, sales orders, and warehouse utilization are still to be added)
 
 ## Azure Functions
 
