@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-API implementation.
+Blazor WebAssembly implementation
 
 ---
 
@@ -31,8 +31,11 @@ Implemented:
 - EF Core migrations
 - WarehouseERP database
 - Swagger UI
+- Global exception handling
 - Category API endpoints
-- Global API exception handling
+- Product API endpoints
+- Category CRUD verified through Swagger and SQL Server
+- Product CRUD verified through Swagger and SQL Server
 
 ## Domain Layer
 
@@ -159,14 +162,43 @@ Implemented:
 
 # Immediate Next Task
 
-Implement the Product API endpoints and verify Product CRUD end-to-end through Swagger and SQL Server.
+Implement the Blazor WebAssembly frontend.
 
-After Product API is complete:
+Build:
 
-- Build the Blazor frontend
+- Dashboard
+- Categories page
+- Products page
+- HTTP API clients
+
+After Blazor:
+
 - Add Dapper dashboard reporting
 - Add Azure Function
 - Final README and demo preparation
+
+## Frontend Direction
+
+The Blazor WebAssembly frontend is intended to evolve into the full Warehouse ERP user interface.
+
+The initial implementation will focus on Categories and Products for the current demo milestone, but the architecture must support future modules including:
+
+- Dashboard
+- Categories
+- Products
+- Suppliers
+- Customers
+- Warehouses
+- Storage Locations
+- Inventory
+- Purchase Orders
+- Sales Orders
+- Reports
+- Settings
+
+Do not treat the initial frontend as a throwaway demo.
+
+Prefer reusable layouts, API clients, components, feature folders, and shared UI patterns that can scale as additional ERP modules are implemented.
 
 ---
 
