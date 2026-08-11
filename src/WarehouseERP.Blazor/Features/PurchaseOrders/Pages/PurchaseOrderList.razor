@@ -1,0 +1,86 @@
+@page "/purchase-orders"
+@inject IPurchaseOrderApiClient PurchaseOrderApiClient
+@inject ISupplierApiClient SupplierApiClient
+
+<PageTitle>Purchase Orders</PageTitle>
+
+<h1>Purchase Orders</h1>
+
+<a class="btn btn-primary mb-3" href="purchase-orders/create">New Purchase Order</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading purchase orders..." />
+}
+else if (_purchaseOrders is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Supplier</th>
+                <th>Order Date</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var purchaseOrder in _purchaseOrders)
+            {
+                <tr>
+                    <td>@purchaseOrder.OrderNumber</td>
+                    <td>@GetSupplierDisplayName(purchaseOrder.SupplierId)</td>
+                    <td>@purchaseOrder.OrderDate.ToString("d")</td>
+                    <td><span class="badge @StatusBadgeClass(purchaseOrder.Status)">@purchaseOrder.Status</span></td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@($"purchase-orders/{purchaseOrder.Id}")">Manage</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<PurchaseOrderDto>? _purchaseOrders;
+    private Dictionary<Guid, SupplierDto> _suppliersById = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var purchaseOrdersTask = PurchaseOrderApiClient.GetAllAsync();
+            var suppliersTask = SupplierApiClient.GetAllAsync();
+
+            await Task.WhenAll(purchaseOrdersTask, suppliersTask);
+
+            _purchaseOrders = purchaseOrdersTask.Result;
+            _suppliersById = suppliersTask.Result.ToDictionary(supplier => supplier.Id);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetSupplierDisplayName(Guid supplierId) =>
+        _suppliersById.TryGetValue(supplierId, out var supplier) ? supplier.Name : "Unknown";
+
+    private static string StatusBadgeClass(PurchaseOrderStatus status) => status switch
+    {
+        PurchaseOrderStatus.Draft => "bg-secondary",
+        PurchaseOrderStatus.Submitted => "bg-primary",
+        PurchaseOrderStatus.PartiallyReceived => "bg-warning text-dark",
+        PurchaseOrderStatus.Received => "bg-success",
+        PurchaseOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

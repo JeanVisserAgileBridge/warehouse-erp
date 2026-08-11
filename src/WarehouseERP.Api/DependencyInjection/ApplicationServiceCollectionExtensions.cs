@@ -25,6 +25,17 @@ using WarehouseERP.Application.ProductCatalog.Products.Commands.DeactivateProduc
 using WarehouseERP.Application.ProductCatalog.Products.Commands.UpdateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProductById;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProducts;
+using WarehouseERP.Application.Procurement.PurchaseOrders;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.AddPurchaseOrderLine;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.CancelPurchaseOrder;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.CreatePurchaseOrder;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.ReceivePurchaseOrderLine;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.RemovePurchaseOrderLine;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.SubmitPurchaseOrder;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrderLine;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Queries.GetPurchaseOrderById;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Queries.GetPurchaseOrders;
+using WarehouseERP.Application.Procurement.PurchaseOrders.Queries.GetPurchaseOrdersBySupplierId;
 using WarehouseERP.Application.Procurement.Suppliers;
 using WarehouseERP.Application.Procurement.Suppliers.Commands.ActivateSupplier;
 using WarehouseERP.Application.Procurement.Suppliers.Commands.CreateSupplier;
@@ -119,6 +130,17 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<ChangeReorderLevelCommand, InventoryItemDto>, ChangeReorderLevelCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetStockMovementsByInventoryItemIdQuery, IReadOnlyList<StockMovementDto>>, GetStockMovementsByInventoryItemIdQueryHandler>();
+
+        services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<PurchaseOrderDto>>, GetPurchaseOrdersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPurchaseOrderByIdQuery, PurchaseOrderDto>, GetPurchaseOrderByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPurchaseOrdersBySupplierIdQuery, IReadOnlyList<PurchaseOrderDto>>, GetPurchaseOrdersBySupplierIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, PurchaseOrderDto>, CreatePurchaseOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<AddPurchaseOrderLineCommand, PurchaseOrderDto>, AddPurchaseOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdatePurchaseOrderLineCommand, PurchaseOrderDto>, UpdatePurchaseOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<RemovePurchaseOrderLineCommand, PurchaseOrderDto>, RemovePurchaseOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, PurchaseOrderDto>, SubmitPurchaseOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<CancelPurchaseOrderCommand, PurchaseOrderDto>, CancelPurchaseOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<ReceivePurchaseOrderLineCommand, PurchaseOrderDto>, ReceivePurchaseOrderLineCommandHandler>();
 
         return services;
     }

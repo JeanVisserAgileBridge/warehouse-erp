@@ -31,6 +31,8 @@ public class WarehouseErpDbContext : DbContext
 
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
@@ -41,5 +43,7 @@ public class WarehouseErpDbContext : DbContext
         modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
         modelBuilder.ApplyConfiguration(new StorageLocationConfiguration());
         modelBuilder.ApplyConfiguration(new StockMovementConfiguration());
+        modelBuilder.ApplyConfiguration(new PurchaseOrderConfiguration());
+        modelBuilder.ApplyConfiguration(new PurchaseOrderLineConfiguration());
     }
 }

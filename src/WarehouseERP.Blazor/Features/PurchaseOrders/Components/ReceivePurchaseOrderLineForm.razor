@@ -1,0 +1,51 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="row g-2 align-items-start">
+        <div class="col-auto">
+            <InputNumber class="form-control" @bind-Value="Model.Quantity" placeholder="Quantity" />
+            <ValidationMessage For="() => Model.Quantity" />
+        </div>
+        <div class="col-auto" style="min-width: 200px;">
+            <InputSelect class="form-select" @bind-Value="Model.StorageLocationId">
+                <option value="">Select a storage location</option>
+                @foreach (var storageLocation in StorageLocations)
+                {
+                    <option value="@storageLocation.Id">@storageLocation.Code</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Model.StorageLocationId" />
+        </div>
+        <div class="col-auto">
+            <InputText class="form-control" @bind-Value="Model.Reference" placeholder="Reference (optional)" />
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <button type="submit" class="btn btn-success" disabled="@IsSubmitting">Receive</button>
+            @if (OnCancel.HasDelegate)
+            {
+                <button type="button" class="btn btn-secondary" @onclick="HandleCancelAsync">Cancel</button>
+            }
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReceivePurchaseOrderLineFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyList<StorageLocationDto> StorageLocations { get; set; } = [];
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+
+    private Task HandleCancelAsync() => OnCancel.InvokeAsync();
+}

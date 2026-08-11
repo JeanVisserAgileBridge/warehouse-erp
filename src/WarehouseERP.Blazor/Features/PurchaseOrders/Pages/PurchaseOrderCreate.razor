@@ -1,0 +1,81 @@
+@page "/purchase-orders/create"
+@inject IPurchaseOrderApiClient PurchaseOrderApiClient
+@inject ISupplierApiClient SupplierApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Purchase Order</PageTitle>
+
+<h1>New Purchase Order</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading suppliers..." />
+}
+else if (_activeSuppliers.Count == 0)
+{
+    <ErrorAlert Message="An active supplier is required before creating a purchase order." />
+}
+else
+{
+    <PurchaseOrderForm Model="_model" Suppliers="_activeSuppliers" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    private readonly PurchaseOrderFormModel _model = new();
+    private IReadOnlyList<SupplierDto> _activeSuppliers = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var suppliers = await SupplierApiClient.GetAllAsync();
+            _activeSuppliers = suppliers.Where(supplier => supplier.IsActive).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model.SupplierId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreatePurchaseOrderRequest
+            {
+                SupplierId = _model.SupplierId.Value,
+                OrderNumber = _model.OrderNumber,
+                OrderDate = _model.OrderDate,
+                Notes = _model.Notes
+            };
+
+            var purchaseOrder = await PurchaseOrderApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo($"purchase-orders/{purchaseOrder.Id}");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

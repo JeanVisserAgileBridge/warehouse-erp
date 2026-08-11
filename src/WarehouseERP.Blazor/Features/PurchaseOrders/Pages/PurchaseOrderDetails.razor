@@ -1,0 +1,330 @@
+@page "/purchase-orders/{Id:guid}"
+@inject IPurchaseOrderApiClient PurchaseOrderApiClient
+@inject ISupplierApiClient SupplierApiClient
+@inject IProductApiClient ProductApiClient
+@inject IStorageLocationApiClient StorageLocationApiClient
+
+<PageTitle>Purchase Order</PageTitle>
+
+<h1>Purchase Order</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading purchase order..." />
+}
+else if (_purchaseOrder is not null)
+{
+    <dl class="row">
+        <dt class="col-sm-2">Order Number</dt>
+        <dd class="col-sm-10">@_purchaseOrder.OrderNumber</dd>
+
+        <dt class="col-sm-2">Supplier</dt>
+        <dd class="col-sm-10">@(_supplier?.Name ?? "Unknown")</dd>
+
+        <dt class="col-sm-2">Order Date</dt>
+        <dd class="col-sm-10">@_purchaseOrder.OrderDate.ToString("d")</dd>
+
+        <dt class="col-sm-2">Status</dt>
+        <dd class="col-sm-10"><span class="badge @StatusBadgeClass(_purchaseOrder.Status)">@_purchaseOrder.Status</span></dd>
+
+        <dt class="col-sm-2">Notes</dt>
+        <dd class="col-sm-10">@_purchaseOrder.Notes</dd>
+    </dl>
+
+    <div class="d-flex gap-2 mb-3">
+        @if (CanSubmit)
+        {
+            <button class="btn btn-primary" disabled="@_isSubmitting" @onclick="HandleSubmitAsync">Submit</button>
+        }
+        @if (CanCancel)
+        {
+            <button class="btn btn-outline-danger" disabled="@_isSubmitting" @onclick="HandleCancelOrderAsync">Cancel Order</button>
+        }
+    </div>
+
+    <h2>Lines</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Unit Price</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _purchaseOrder.Lines)
+            {
+                <tr>
+                    <td>@GetProductDisplayName(line.ProductId)</td>
+                    <td>@line.QuantityOrdered</td>
+                    <td>
+                        @line.QuantityReceived
+                        @if (line.QuantityReceived > 0 && line.QuantityReceived < line.QuantityOrdered)
+                        {
+                            <span class="badge bg-warning text-dark ms-1">Partial</span>
+                        }
+                        else if (line.QuantityReceived == line.QuantityOrdered)
+                        {
+                            <span class="badge bg-success ms-1">Complete</span>
+                        }
+                    </td>
+                    <td>@line.UnitPrice.ToString("C")</td>
+                    <td class="d-flex gap-2">
+                        @if (IsDraft)
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(line)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => HandleRemoveLineAsync(line.ProductId)">Remove</button>
+                        }
+                        else if (CanReceive(line))
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => StartReceive(line)">Receive</button>
+                        }
+                    </td>
+                </tr>
+                @if (_editingProductId == line.ProductId)
+                {
+                    <tr>
+                        <td colspan="5">
+                            <PurchaseOrderLineForm
+                                Model="_editLineModel"
+                                ProductLocked="true"
+                                LockedProductName="@GetProductDisplayName(line.ProductId)"
+                                SubmitLabel="Save"
+                                IsSubmitting="_isSubmitting"
+                                OnValidSubmit="HandleUpdateLineAsync"
+                                OnCancel="CancelEdit" />
+                        </td>
+                    </tr>
+                }
+                @if (_receivingProductId == line.ProductId)
+                {
+                    <tr>
+                        <td colspan="5">
+                            <ReceivePurchaseOrderLineForm
+                                Model="_receiveLineModel"
+                                StorageLocations="_activeStorageLocations"
+                                IsSubmitting="_isSubmitting"
+                                OnValidSubmit="HandleReceiveAsync"
+                                OnCancel="CancelReceive" />
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    @if (IsDraft)
+    {
+        <h2 class="mt-4">Add Line</h2>
+        @if (AvailableProductsForNewLine.Count == 0)
+        {
+            <ErrorAlert Message="All active products have already been added to this order." />
+        }
+        else
+        {
+            <PurchaseOrderLineForm
+                Model="_addLineModel"
+                Products="AvailableProductsForNewLine"
+                SubmitLabel="Add Line"
+                IsSubmitting="_isSubmitting"
+                OnValidSubmit="HandleAddLineAsync" />
+        }
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private PurchaseOrderDto? _purchaseOrder;
+    private SupplierDto? _supplier;
+    private IReadOnlyList<ProductDto> _products = [];
+    private Dictionary<Guid, ProductDto> _productsById = new();
+    private IReadOnlyList<StorageLocationDto> _activeStorageLocations = [];
+    private readonly PurchaseOrderLineFormModel _addLineModel = new();
+    private PurchaseOrderLineFormModel _editLineModel = new();
+    private ReceivePurchaseOrderLineFormModel _receiveLineModel = new();
+    private Guid? _editingProductId;
+    private Guid? _receivingProductId;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private bool IsDraft => _purchaseOrder?.Status == PurchaseOrderStatus.Draft;
+
+    private bool CanSubmit => IsDraft && _purchaseOrder!.Lines.Count > 0;
+
+    private bool CanCancel => _purchaseOrder is not null
+        && _purchaseOrder.Status != PurchaseOrderStatus.Received
+        && _purchaseOrder.Status != PurchaseOrderStatus.Cancelled;
+
+    private List<ProductDto> AvailableProductsForNewLine => _products
+        .Where(product => product.IsActive && _purchaseOrder is not null
+            && _purchaseOrder.Lines.All(line => line.ProductId != product.Id))
+        .ToList();
+
+    private static bool CanReceive(PurchaseOrderLineDto line) => line.QuantityReceived < line.QuantityOrdered;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var purchaseOrderTask = PurchaseOrderApiClient.GetByIdAsync(Id);
+            var productsTask = ProductApiClient.GetAllAsync();
+            var storageLocationsTask = StorageLocationApiClient.GetAllAsync();
+
+            await Task.WhenAll(purchaseOrderTask, productsTask, storageLocationsTask);
+
+            _purchaseOrder = purchaseOrderTask.Result;
+            _products = productsTask.Result;
+            _productsById = _products.ToDictionary(product => product.Id);
+            _activeStorageLocations = storageLocationsTask.Result.Where(storageLocation => storageLocation.IsActive).ToList();
+
+            _supplier = await SupplierApiClient.GetByIdAsync(_purchaseOrder.SupplierId);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetProductDisplayName(Guid productId) =>
+        _productsById.TryGetValue(productId, out var product) ? $"{product.Sku} - {product.Name}" : "Unknown";
+
+    private void StartEdit(PurchaseOrderLineDto line)
+    {
+        _receivingProductId = null;
+        _editingProductId = line.ProductId;
+        _editLineModel = new PurchaseOrderLineFormModel
+        {
+            ProductId = line.ProductId,
+            QuantityOrdered = line.QuantityOrdered,
+            UnitPrice = line.UnitPrice
+        };
+    }
+
+    private void CancelEdit() => _editingProductId = null;
+
+    private void StartReceive(PurchaseOrderLineDto line)
+    {
+        _editingProductId = null;
+        _receivingProductId = line.ProductId;
+        _receiveLineModel = new ReceivePurchaseOrderLineFormModel();
+    }
+
+    private void CancelReceive() => _receivingProductId = null;
+
+    private async Task HandleAddLineAsync()
+    {
+        if (_addLineModel.ProductId is null)
+        {
+            return;
+        }
+
+        await RunActionAsync(() => PurchaseOrderApiClient.AddLineAsync(Id, new AddPurchaseOrderLineRequest
+        {
+            ProductId = _addLineModel.ProductId.Value,
+            QuantityOrdered = _addLineModel.QuantityOrdered,
+            UnitPrice = _addLineModel.UnitPrice
+        }));
+
+        _addLineModel.ProductId = null;
+        _addLineModel.QuantityOrdered = 0;
+        _addLineModel.UnitPrice = 0;
+    }
+
+    private async Task HandleUpdateLineAsync()
+    {
+        if (_editingProductId is null)
+        {
+            return;
+        }
+
+        var productId = _editingProductId.Value;
+
+        await RunActionAsync(() => PurchaseOrderApiClient.UpdateLineAsync(Id, productId, new UpdatePurchaseOrderLineRequest
+        {
+            QuantityOrdered = _editLineModel.QuantityOrdered,
+            UnitPrice = _editLineModel.UnitPrice
+        }));
+
+        _editingProductId = null;
+    }
+
+    private async Task HandleRemoveLineAsync(Guid productId)
+    {
+        await RunActionAsync(() => PurchaseOrderApiClient.RemoveLineAsync(Id, productId));
+    }
+
+    private async Task HandleReceiveAsync()
+    {
+        if (_receivingProductId is null || _receiveLineModel.StorageLocationId is null)
+        {
+            return;
+        }
+
+        var productId = _receivingProductId.Value;
+
+        await RunActionAsync(() => PurchaseOrderApiClient.ReceiveLineAsync(Id, productId, new ReceivePurchaseOrderLineRequest
+        {
+            Quantity = _receiveLineModel.Quantity,
+            StorageLocationId = _receiveLineModel.StorageLocationId.Value,
+            Reference = _receiveLineModel.Reference
+        }));
+
+        _receivingProductId = null;
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        await RunActionAsync(() => PurchaseOrderApiClient.SubmitAsync(Id));
+    }
+
+    private async Task HandleCancelOrderAsync()
+    {
+        await RunActionAsync(() => PurchaseOrderApiClient.CancelAsync(Id));
+    }
+
+    private async Task RunActionAsync(Func<Task<PurchaseOrderDto>> action)
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            await action();
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string StatusBadgeClass(PurchaseOrderStatus status) => status switch
+    {
+        PurchaseOrderStatus.Draft => "bg-secondary",
+        PurchaseOrderStatus.Submitted => "bg-primary",
+        PurchaseOrderStatus.PartiallyReceived => "bg-warning text-dark",
+        PurchaseOrderStatus.Received => "bg-success",
+        PurchaseOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

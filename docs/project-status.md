@@ -2,7 +2,8 @@
 
 ## Current Phase
 
-ERP expansion — Inventory Management complete. Next up: Purchase Orders.
+ERP expansion — Purchase Order Management complete. Next: Sales Order Management and/or
+applying outstanding migrations against a live database.
 ---
 
 # Completed
@@ -225,9 +226,9 @@ A new `IUnitOfWork` abstraction (`Application/Common/IUnitOfWork.cs`) was introd
 `StockMovement` together, atomically. `InventoryItemRepository` and `StockMovementRepository`
 no longer call `SaveChangesAsync` themselves — every Inventory command handler calls
 `IUnitOfWork.SaveChangesAsync` once after all repository calls, so both writes commit in a
-single database transaction. This is scoped to the Inventory feature only; every other
-repository (Product, Supplier, Customer, Warehouse, StorageLocation) keeps self-committing
-`AddAsync`/`UpdateAsync` as before.
+single database transaction. This carve-out from the self-committing convention now also
+covers the Purchase Order feature (see below); every other repository (Product, Supplier,
+Customer, Warehouse, StorageLocation) keeps self-committing `AddAsync`/`UpdateAsync` as before.
 
 `AdjustStock`'s `StockMovement.Quantity` stores the absolute magnitude of the change
 (`|new - old|`), not the resulting quantity, since the Domain already requires movement
@@ -236,6 +237,59 @@ zero-delta adjustment creates no movement.
 
 New exceptions: `DuplicateInventoryItemException`, `InactiveProductException`,
 `InactiveStorageLocationException` — following the existing one-exception-per-rule pattern.
+
+### Purchase Order Feature
+
+- Create Purchase Order
+- Add Purchase Order Line
+- Update Purchase Order Line
+- Remove Purchase Order Line
+- Submit Purchase Order
+- Cancel Purchase Order
+- Receive Purchase Order Line
+- Get Purchase Orders
+- Get Purchase Order By Id
+- Get Purchase Orders By Supplier Id
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs (`PurchaseOrderDto`, `PurchaseOrderLineDto`)
+- `IPurchaseOrderRepository`
+- Application tests
+
+No Domain changes were required. `PurchaseOrder`/`PurchaseOrderLine` already supported the full
+workflow (`AddLine`, `RemoveLine`, `Submit`, `Cancel`, `ReceiveProduct`). Two Application-level
+decisions worth noting:
+
+- There is no Domain `UpdateLine` behaviour. `UpdatePurchaseOrderLineCommandHandler` implements
+  "update a line while Draft" by calling `RemoveLine` then `AddLine` for the same `ProductId` —
+  both already require Draft and re-validate quantity/price, and since a line can only be edited
+  while Draft, `QuantityReceived` is always zero at that point, so nothing is lost.
+- Lines are addressed by `ProductId`, not `PurchaseOrderLine.Id`, in commands and API routes.
+  This matches how the Domain aggregate itself looks lines up (`AddLine`/`RemoveLine`/
+  `ReceiveProduct` all take a `ProductId`) and avoids exposing an id that would change every
+  time a line is edited (since edit = remove + re-add).
+
+`IPurchaseOrderRepository.GetByIdAsync` returns a **tracked** entity (with `Lines` included),
+unlike the `AsNoTracking` + explicit `UpdateAsync` pattern used by flat aggregates (Supplier,
+Product, InventoryItem). `PurchaseOrder` has a child collection that grows and shrinks via
+`AddLine`/`RemoveLine`, and EF Core's change tracker can only detect added/removed/modified
+lines correctly if the aggregate stays tracked between load and save. Because of this,
+`IPurchaseOrderRepository` has no `UpdateAsync` method at all — command handlers mutate the
+tracked aggregate returned by `GetByIdAsync` and commit through `IUnitOfWork`.
+
+`ReceivePurchaseOrderLineCommandHandler` is the key workflow: it loads the `PurchaseOrder`,
+calls `ReceiveProduct` (which enforces status/line-exists/quantity rules), validates the
+`StorageLocation`, finds or creates the matching `InventoryItem` via
+`GetByProductIdAndStorageLocationIdAsync`, creates a `StockMovement` of type `Receipt`, and
+commits all three aggregate changes with a single `IUnitOfWork.SaveChangesAsync` call.
+
+New exceptions: `InactiveSupplierException`, `DuplicateOrderNumberException` — following the
+existing one-exception-per-rule pattern. `OrderNumber` uniqueness is enforced case-insensitively
+and globally (not scoped per Supplier), matching the `Supplier.Name`/`Warehouse.Code` pattern.
 
 ---
 
@@ -263,6 +317,9 @@ Implemented:
 - StockMovementConfiguration
 - InventoryItemRepository
 - StockMovementRepository
+- PurchaseOrderConfiguration
+- PurchaseOrderLineConfiguration
+- PurchaseOrderRepository
 - UnitOfWork (implements `IUnitOfWork`)
 - Dependency Injection
 - Infrastructure constants
@@ -270,6 +327,8 @@ Implemented:
 InventoryItemConfiguration now declares a required foreign key from `InventoryItem.StorageLocationId` to `StorageLocation`, with `Restrict` delete behaviour. No Domain change was needed.
 
 StockMovementConfiguration persists `MovementType` as a string (`.HasConversion<string>()`), `Reference` at the existing `StockMovement.MaxReferenceLength` domain constant, and a required, `Restrict`-delete foreign key to `InventoryItem`.
+
+PurchaseOrderConfiguration maps `PurchaseOrder.Lines` (an `IReadOnlyCollection<PurchaseOrderLine>`) to the private `_lines` backing field via `Navigation(...).HasField("_lines").UsePropertyAccessMode(PropertyAccessMode.Field)`, so EF Core's change tracker observes line additions/removals made through `AddLine`/`RemoveLine` without exposing a mutable collection on the aggregate's public API. `OrderNumber` uses the same case-insensitive collation and unique index pattern as `Supplier.Name`. `PurchaseOrderLineConfiguration` gives `ProductId` a `Restrict`-delete foreign key to `Product`; the `PurchaseOrderId` foreign key is `Cascade`-delete, configured from the `PurchaseOrder` side.
 
 ### Database
 
@@ -280,6 +339,7 @@ StockMovementConfiguration persists `MovementType` as a string (`.HasConversion<
 - AddCustomers migration (generated, not yet applied)
 - AddWarehouses migration (generated, not yet applied) — creates `Warehouses` and `StorageLocations`, and adds the `InventoryItems.StorageLocationId` foreign key
 - AddStockMovements migration (generated, not yet applied) — creates `StockMovements`
+- AddPurchaseOrders migration (generated, not yet applied) — creates `PurchaseOrders` and `PurchaseOrderLines`
 
 ### Dapper
 
@@ -310,11 +370,12 @@ Implemented:
 - Warehouse API
 - Storage Location API
 - Inventory API
+- Purchase Order API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
 
-Storage Location endpoints expose a nested route, `GET /api/warehouses/{warehouseId}/storage-locations`, alongside the standard `/api/storage-locations` resource routes.
+Storage Location endpoints expose a nested route, `GET /api/warehouses/{warehouseId}/storage-locations`, alongside the standard `/api/storage-locations` resource routes. Purchase Order endpoints follow the same pattern with `GET /api/suppliers/{supplierId}/purchase-orders`. Purchase Order line routes (`.../lines/{productId}`, including `update`, `remove`, and `receive`) are addressed by `ProductId` rather than `PurchaseOrderLine.Id`, matching how the Domain aggregate itself looks up lines.
 
 Verified:
 
@@ -325,6 +386,7 @@ Verified:
 - Warehouse CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Storage Location CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Inventory CRUD and stock workflows — receive, issue, adjust, change reorder level, movement history (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Purchase Order workflow — create, add/update/remove line, submit, cancel, receive (partial and full) (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -383,6 +445,16 @@ Implemented:
 - IssueStockRequest
 - AdjustStockRequest
 - ChangeReorderLevelRequest
+
+### Purchase Orders
+
+- PurchaseOrderDto
+- PurchaseOrderLineDto
+- PurchaseOrderStatus (mirrors the Domain enum; Shared cannot reference Domain)
+- CreatePurchaseOrderRequest
+- AddPurchaseOrderLineRequest
+- UpdatePurchaseOrderLineRequest
+- ReceivePurchaseOrderLineRequest
 
 WarehouseERP.Shared is the contract boundary between the API and the Blazor frontend.
 
@@ -473,6 +545,22 @@ Template pages were removed and replaced with ERP functionality.
 Added under a new "Inventory" navigation section. Product and Storage Location selectors
 reuse the existing `IProductApiClient`/`IStorageLocationApiClient`.
 
+### Purchase Orders
+
+- List (Supplier display, status badge)
+- Create (Supplier selection, restricted to active Suppliers)
+- Details page hosting: order header and status, Submit/Cancel actions, a lines table showing
+  ordered vs. received quantities with partial/complete badges, an Add Line form (Draft only),
+  inline per-line Edit/Remove (Draft only), and an inline per-line Receive form (Submitted/
+  PartiallyReceived lines with remaining quantity), with destination Storage Location selection
+
+Added under the existing "Procurement" navigation section, alongside Suppliers. Supplier,
+Product, and Storage Location selectors reuse the existing `ISupplierApiClient`/
+`IProductApiClient`/`IStorageLocationApiClient`. Receiving business logic (finding/creating the
+`InventoryItem`, updating Purchase Order status, creating the `StockMovement`) stays entirely in
+the Application layer; the Blazor form only collects Quantity, Storage Location, and an optional
+Reference.
+
 ---
 
 ## Azure Functions
@@ -553,18 +641,17 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Inventory Management is implemented end-to-end across Application, Infrastructure, API,
-Shared contracts, and Blazor WebAssembly, including the new `IUnitOfWork` abstraction for
-atomic InventoryItem + StockMovement writes.
+Purchase Order Management is complete end-to-end (Application, Infrastructure, API, Shared,
+Blazor, tests). The `AddPurchaseOrders` migration has been generated but not yet applied.
 
-Remaining before this migration is live:
+Candidates for the next phase:
 
-- Apply the AddStockMovements migration (not yet applied), alongside the still-pending
-  AddSuppliers, AddCustomers, and AddWarehouses migrations
+- Apply the outstanding migrations (`AddSuppliers`, `AddCustomers`, `AddWarehouses`,
+  `AddStockMovements`, `AddPurchaseOrders`) against a real SQL Server database and verify all
+  modules end-to-end against it.
+- Sales Order Management, following the same pattern as Purchase Orders.
 
-Next:
-
-- Continue with Purchase Orders
+Supplier, Inventory, and Purchase Order Management are already complete.
 
 ---
 
@@ -577,7 +664,7 @@ Planned ERP modules:
 - Warehouse Management
 - Storage Locations
 - Inventory Management
-- Purchase Orders
+- Purchase Orders (complete)
 - Sales Orders
 - Reporting
 - Settings
