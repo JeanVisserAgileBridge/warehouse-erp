@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WarehouseERP.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using WarehouseERP.Infrastructure.Persistence;
 namespace WarehouseERP.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WarehouseErpDbContext))]
-    partial class WarehouseErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807141738_AddInventoryItems")]
+    partial class AddInventoryItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

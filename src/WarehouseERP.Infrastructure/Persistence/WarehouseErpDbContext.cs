@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WarehouseERP.Domain.Inventory;
 using WarehouseERP.Domain.ProductCatalog;
 using WarehouseERP.Infrastructure.Persistence.Configurations;
 
@@ -15,9 +16,12 @@ public class WarehouseErpDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
 
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryItemConfiguration());
     }
 }

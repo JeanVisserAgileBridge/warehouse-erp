@@ -134,6 +134,12 @@ Includes:
 - `IDashboardQueryService` abstraction (implemented with Dapper in Infrastructure)
 - `DashboardSummary` DTO
 
+### Inventory Low Stock Feature
+
+- `ILowStockInventoryQueryService` abstraction (implemented with Dapper in Infrastructure)
+- `LowStockInventoryItem` DTO
+- Consumed directly by the `LowStockChecker` Azure Function (no Query/Handler wrapper needed, since there is no HTTP request to validate)
+
 ---
 
 ## Infrastructure Layer
@@ -145,6 +151,7 @@ Implemented:
 - WarehouseErpDbContext
 - Category entity configuration
 - Product entity configuration
+- InventoryItem entity configuration (FK to Product only; StorageLocationId is not yet FK-constrained because StorageLocation is not persisted)
 - CategoryRepository
 - ProductRepository
 - Dependency Injection extension
@@ -153,6 +160,7 @@ Implemented:
   - Category.Name
   - Product.Sku
 - Dapper (`DashboardQueryService`) for read-only dashboard reporting, using a dedicated `SqlConnection` built from the same `WarehouseErpDatabase` connection string as EF Core. EF Core remains the only data access technique for transactional persistence.
+- Dapper (`LowStockInventoryQueryService`) for the read-only low-stock inventory query used by the Azure Function.
 
 ---
 
@@ -189,6 +197,20 @@ Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
 
 ---
 
+## Azure Functions
+
+Implemented:
+
+- `WarehouseERP.Functions` project (isolated worker model, `net10.0`, minimal hosting API)
+- `LowStockChecker`: timer-triggered function (every 5 minutes) that reads low-stock `InventoryItem` rows via `ILowStockInventoryQueryService` and logs each one (InventoryItemId, ProductId, StorageLocationId, QuantityOnHand, ReorderLevel). Read-only; does not modify inventory.
+- References `WarehouseERP.Application` and `WarehouseERP.Infrastructure` only, mirroring the Api project's dependency shape.
+
+A low-stock item is defined as `QuantityOnHand <= ReorderLevel`.
+
+No email/queue/notification integration yet — logging only, per the current demo milestone.
+
+---
+
 # Current Architecture Decisions
 
 - Domain has no external dependencies.
@@ -206,12 +228,12 @@ Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
 
 # Immediate Next Task
 
-Categories, Products, and the initial Dashboard reporting slice (Dapper-based) are complete in the Blazor frontend and API.
+Categories, Products, the initial Dashboard reporting slice (Dapper-based), and the low-stock Azure Function are complete.
 
 Next up:
 
-- Add Azure Function
 - Final README and demo preparation
+- Consider persisting Warehouse and StorageLocation (currently Domain-only), which would let InventoryItem.StorageLocationId become FK-constrained and enable seed data for a real low-stock demo run
 
 ## Frontend Direction
 
@@ -250,10 +272,6 @@ Prefer reusable layouts, API clients, components, feature folders, and shared UI
 ## Dapper
 
 - Inventory summary (Dashboard reporting for Categories/Products is done; additional metrics such as inventory value, low stock, purchase orders, sales orders, and warehouse utilization are still to be added)
-
-## Azure Functions
-
-- Low stock scheduled function
 
 ## Final Polish
 
