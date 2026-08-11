@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Blazor WebAssembly implementation
+Demo preparation and final polish.
 
 ---
 
@@ -21,21 +21,6 @@ Blazor WebAssembly implementation
 - AI development workflow
 
 ---
-
-## API
-
-Implemented:
-
-- API-to-Infrastructure dependency injection
-- SQL Server connection configuration
-- EF Core migrations
-- WarehouseERP database
-- Swagger UI
-- Global exception handling
-- Category API endpoints
-- Product API endpoints
-- Category CRUD verified through Swagger and SQL Server
-- Product CRUD verified through Swagger and SQL Server
 
 ## Domain Layer
 
@@ -64,17 +49,6 @@ Implemented and tested:
 - Aggregate roots
 - Value validation
 - EF Core compatible constructors
-
----
-
-## Testing
-
-Completed:
-
-- Domain unit tests
-- Application unit tests
-
-All tests are currently passing.
 
 ---
 
@@ -124,21 +98,25 @@ Includes:
 - Repository interface
 - Application tests
 
-### Dashboard Reporting Feature
+### Dashboard Reporting
 
 - Get Dashboard Summary
 
 Includes:
 
-- Query and handler (`GetDashboardSummaryQuery`)
-- `IDashboardQueryService` abstraction (implemented with Dapper in Infrastructure)
-- `DashboardSummary` DTO
+- Query
+- Query Handler
+- IDashboardQueryService abstraction
+- DashboardSummary DTO
 
-### Inventory Low Stock Feature
+### Inventory Low Stock
 
-- `ILowStockInventoryQueryService` abstraction (implemented with Dapper in Infrastructure)
-- `LowStockInventoryItem` DTO
-- Consumed directly by the `LowStockChecker` Azure Function (no Query/Handler wrapper needed, since there is no HTTP request to validate)
+Includes:
+
+- ILowStockInventoryQueryService abstraction
+- LowStockInventoryItem DTO
+
+Used by the Azure Function for scheduled background processing.
 
 ---
 
@@ -146,21 +124,57 @@ Includes:
 
 Implemented:
 
-- Entity Framework Core
+### Entity Framework Core
+
 - SQL Server provider
 - WarehouseErpDbContext
-- Category entity configuration
-- Product entity configuration
-- InventoryItem entity configuration (FK to Product only; StorageLocationId is not yet FK-constrained because StorageLocation is not persisted)
+- Category configuration
+- Product configuration
+- InventoryItem configuration
 - CategoryRepository
 - ProductRepository
-- Dependency Injection extension
+- Dependency Injection
 - Infrastructure constants
-- Explicit case-insensitive SQL Server collation for:
-  - Category.Name
-  - Product.Sku
-- Dapper (`DashboardQueryService`) for read-only dashboard reporting, using a dedicated `SqlConnection` built from the same `WarehouseErpDatabase` connection string as EF Core. EF Core remains the only data access technique for transactional persistence.
-- Dapper (`LowStockInventoryQueryService`) for the read-only low-stock inventory query used by the Azure Function.
+
+### Database
+
+- SQL Server
+- InitialCreate migration
+- AddInventoryItems migration
+
+### Dapper
+
+Used exclusively for read-only queries.
+
+Implemented:
+
+- DashboardQueryService
+- LowStockInventoryQueryService
+
+EF Core remains responsible for transactional persistence.
+
+---
+
+## API
+
+Implemented:
+
+- Dependency Injection
+- SQL Server configuration
+- EF Core migrations
+- Swagger UI
+- Global exception handling
+- Category API
+- Product API
+- Dashboard API
+- Shared contract mapping
+- CORS configuration
+
+Verified:
+
+- Category CRUD
+- Product CRUD
+- Dashboard endpoint
 
 ---
 
@@ -168,32 +182,63 @@ Implemented:
 
 Implemented:
 
-- CategoryDto, CreateCategoryRequest, UpdateCategoryRequest
-- ProductDto, CreateProductRequest, UpdateProductRequest
+### Categories
+
+- CategoryDto
+- CreateCategoryRequest
+- UpdateCategoryRequest
+
+### Products
+
+- ProductDto
+- CreateProductRequest
+- UpdateProductRequest
+
+### Dashboard
+
 - DashboardSummary
 
-The Api project now takes these Shared contracts directly as controller request/response types (mapped from Application DTOs at the controller boundary), so Blazor and the Api consume the same wire contracts instead of duplicated shapes.
+WarehouseERP.Shared is the contract boundary between the API and the Blazor frontend.
 
 ---
 
-## Blazor WebAssembly Frontend
+## Blazor WebAssembly
 
 Implemented:
 
-- Feature-first folder structure (`Features/{Feature}/Pages|Components|Services`)
-- Application layout and grouped navigation (`Shared/Layout`, with `NavSection` for scalable module grouping)
-- Reusable `LoadingIndicator` and `ErrorAlert` components (`Shared/Components`)
-- Typed HTTP client infrastructure (`ApiOptions` configuration, `ApiException`, `HttpResponseMessageExtensions`)
-- Categories feature: list, create, edit, activate, deactivate
-- Products feature: list, create, edit, activate, deactivate, category selection
-- Dashboard feature: summary cards (Total/Active Categories, Total/Active/Inactive Products) at the root route, backed by `GET /api/dashboard`; `StatCard` in `Shared/Components` is reusable for future metrics
+### Foundation
 
-Includes:
+- Feature-first folder structure
+- Application layout
+- Navigation
+- Typed HttpClient infrastructure
+- Configuration-driven API base URL
+- Reusable loading components
+- Reusable error components
 
-- Configuration-driven API base URL (`wwwroot/appsettings.json`)
-- CORS enabled on the Api for the Blazor dev origins
+### Dashboard
 
-Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
+- Dashboard summary cards
+- Dapper-backed statistics
+
+### Categories
+
+- List
+- Create
+- Edit
+- Activate
+- Deactivate
+
+### Products
+
+- List
+- Create
+- Edit
+- Activate
+- Deactivate
+- Category selection
+
+Template pages were removed and replaced with ERP functionality.
 
 ---
 
@@ -201,45 +246,60 @@ Template demo pages (Counter, Weather) were removed as out of scope for the ERP.
 
 Implemented:
 
-- `WarehouseERP.Functions` project (isolated worker model, `net10.0`, minimal hosting API)
-- `LowStockChecker`: timer-triggered function (every 5 minutes) that reads low-stock `InventoryItem` rows via `ILowStockInventoryQueryService` and logs each one (InventoryItemId, ProductId, StorageLocationId, QuantityOnHand, ReorderLevel). Read-only; does not modify inventory.
-- References `WarehouseERP.Application` and `WarehouseERP.Infrastructure` only, mirroring the Api project's dependency shape.
+### LowStockChecker
 
-A low-stock item is defined as `QuantityOnHand <= ReorderLevel`.
+- Timer-triggered function
+- Executes every five minutes
+- Uses Dapper through Application abstractions
+- Reads InventoryItems
+- Logs low-stock products
+- Read-only and idempotent
 
-No email/queue/notification integration yet — logging only, per the current demo milestone.
+Low stock is defined as:
 
----
-
-# Current Architecture Decisions
-
-- Domain has no external dependencies.
-- Application depends only on Domain.
-- Infrastructure depends on Application and Domain.
-- API is the composition root.
-- Blazor communicates with the API over HTTP.
-- EF Core is used for transactional persistence.
-- Dapper is used for reporting and read-only queries (see Dashboard).
-- CQRS is implemented using plain C# handlers.
-- Generic repositories are intentionally avoided.
-- SQL Server is the system database.
+```
+QuantityOnHand <= ReorderLevel
+```
 
 ---
 
-# Immediate Next Task
+## Testing
 
-Categories, Products, the initial Dashboard reporting slice (Dapper-based), and the low-stock Azure Function are complete.
+Completed:
 
-Next up:
+- Domain unit tests
+- Application unit tests
+- API verification through Swagger
+- Blazor integration testing
+- Azure Function execution verified
 
-- Final README and demo preparation
-- Consider persisting Warehouse and StorageLocation (currently Domain-only), which would let InventoryItem.StorageLocationId become FK-constrained and enable seed data for a real low-stock demo run
+All tests are currently passing.
 
-## Frontend Direction
+---
 
-The Blazor WebAssembly frontend is intended to evolve into the full Warehouse ERP user interface.
+# Current Architecture
 
-The initial implementation will focus on Categories and Products for the current demo milestone, but the architecture must support future modules including:
+- Clean Architecture
+- SOLID principles
+- CQRS using command/query handlers
+- Rich Domain Model
+- EF Core for transactional persistence
+- Dapper for reporting
+- SQL Server database
+- ASP.NET Core Web API
+- Blazor WebAssembly frontend
+- Azure Functions
+- Shared API contracts
+- Dependency Injection throughout
+- Generic repositories intentionally avoided
+
+---
+
+# Frontend Direction
+
+The Blazor application is intended to evolve into the complete Warehouse ERP system.
+
+The current implementation establishes the foundation for future modules including:
 
 - Dashboard
 - Categories
@@ -254,27 +314,40 @@ The initial implementation will focus on Categories and Products for the current
 - Reports
 - Settings
 
-Do not treat the initial frontend as a throwaway demo.
-
-Prefer reusable layouts, API clients, components, feature folders, and shared UI patterns that can scale as additional ERP modules are implemented.
+The architecture emphasizes reusable components, feature-first organization, and scalable API clients.
 
 ---
 
-# Remaining Work
+# Immediate Next Tasks
 
-## API
+Current focus:
 
-- Categories API
-- Products API
-- Global exception handling
-- Swagger verification
-
-## Dapper
-
-- Inventory summary (Dashboard reporting for Categories/Products is done; additional metrics such as inventory value, low stock, purchase orders, sales orders, and warehouse utilization are still to be added)
-
-## Final Polish
-
-- Seed data
-- README updates
+- Final README
 - Demo preparation
+- End-to-end verification
+- Seed/demo data
+- Architecture documentation
+
+---
+
+# Future Roadmap
+
+Planned ERP modules:
+
+- Supplier Management
+- Customer Management
+- Warehouse Management
+- Storage Locations
+- Inventory Management
+- Purchase Orders
+- Sales Orders
+- Reporting
+- Settings
+- Authentication & Authorization
+- Inventory reservations
+- Goods Receipts
+- Shipments
+- Backorders
+- Batch tracking
+- Serial numbers
+- Azure deployment
