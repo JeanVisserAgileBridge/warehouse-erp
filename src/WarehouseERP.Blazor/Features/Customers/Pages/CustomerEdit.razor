@@ -1,0 +1,85 @@
+@page "/customers/{Id:guid}/edit"
+@inject ICustomerApiClient CustomerApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Customer</PageTitle>
+
+<h1>Edit Customer</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading customer..." />
+}
+else if (_model is not null)
+{
+    <CustomerForm Model="_model" SubmitLabel="Save" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private CustomerFormModel? _model;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var customer = await CustomerApiClient.GetByIdAsync(Id);
+
+            _model = new CustomerFormModel
+            {
+                Name = customer.Name,
+                Email = customer.Email,
+                PhoneNumber = customer.PhoneNumber,
+                Address = customer.Address
+            };
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateCustomerRequest
+            {
+                Name = _model.Name,
+                Email = _model.Email,
+                PhoneNumber = _model.PhoneNumber,
+                Address = _model.Address
+            };
+
+            await CustomerApiClient.UpdateAsync(Id, request);
+            NavigationManager.NavigateTo("customers");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

@@ -21,6 +21,13 @@ using WarehouseERP.Application.Procurement.Suppliers.Commands.UpdateSupplier;
 using WarehouseERP.Application.Procurement.Suppliers.Queries.GetSupplierById;
 using WarehouseERP.Application.Procurement.Suppliers.Queries.GetSuppliers;
 using WarehouseERP.Application.Reporting.Dashboard.Queries.GetDashboardSummary;
+using WarehouseERP.Application.Sales.Customers;
+using WarehouseERP.Application.Sales.Customers.Commands.ActivateCustomer;
+using WarehouseERP.Application.Sales.Customers.Commands.CreateCustomer;
+using WarehouseERP.Application.Sales.Customers.Commands.DeactivateCustomer;
+using WarehouseERP.Application.Sales.Customers.Commands.UpdateCustomer;
+using WarehouseERP.Application.Sales.Customers.Queries.GetCustomerById;
+using WarehouseERP.Application.Sales.Customers.Queries.GetCustomers;
 using ApplicationDashboardSummary = WarehouseERP.Application.Reporting.Dashboard.DashboardSummary;
 
 namespace WarehouseERP.Api.DependencyInjection;
@@ -49,6 +56,13 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<UpdateSupplierCommand, SupplierDto>, UpdateSupplierCommandHandler>();
         services.AddScoped<ICommandHandler<ActivateSupplierCommand, SupplierDto>, ActivateSupplierCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateSupplierCommand, SupplierDto>, DeactivateSupplierCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetCustomersQuery, IReadOnlyList<CustomerDto>>, GetCustomersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCustomerByIdQuery, CustomerDto>, GetCustomerByIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateCustomerCommand, CustomerDto>, CreateCustomerCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateCustomerCommand, CustomerDto>, UpdateCustomerCommandHandler>();
+        services.AddScoped<ICommandHandler<ActivateCustomerCommand, CustomerDto>, ActivateCustomerCommandHandler>();
+        services.AddScoped<ICommandHandler<DeactivateCustomerCommand, CustomerDto>, DeactivateCustomerCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetDashboardSummaryQuery, ApplicationDashboardSummary>, GetDashboardSummaryQueryHandler>();
 

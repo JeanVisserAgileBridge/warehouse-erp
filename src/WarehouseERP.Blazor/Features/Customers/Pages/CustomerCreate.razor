@@ -1,0 +1,45 @@
+@page "/customers/create"
+@inject ICustomerApiClient CustomerApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Customer</PageTitle>
+
+<h1>New Customer</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<CustomerForm Model="_model" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+
+@code {
+    private readonly CustomerFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateCustomerRequest
+            {
+                Name = _model.Name,
+                Email = _model.Email,
+                PhoneNumber = _model.PhoneNumber,
+                Address = _model.Address
+            };
+
+            await CustomerApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("customers");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

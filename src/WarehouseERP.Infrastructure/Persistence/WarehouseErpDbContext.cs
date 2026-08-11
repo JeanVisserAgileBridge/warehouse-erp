@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WarehouseERP.Domain.Inventory;
 using WarehouseERP.Domain.ProductCatalog;
 using WarehouseERP.Domain.Procurement;
+using WarehouseERP.Domain.Sales;
 using WarehouseERP.Infrastructure.Persistence.Configurations;
 
 namespace WarehouseERP.Infrastructure.Persistence;
@@ -21,11 +22,14 @@ public class WarehouseErpDbContext : DbContext
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
+    public DbSet<Customer> Customers => Set<Customer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryItemConfiguration());
         modelBuilder.ApplyConfiguration(new SupplierConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomerConfiguration());
     }
 }

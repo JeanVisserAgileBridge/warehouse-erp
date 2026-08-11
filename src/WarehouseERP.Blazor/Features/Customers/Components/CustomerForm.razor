@@ -1,0 +1,48 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="customerName" class="form-label">Name</label>
+        <InputText id="customerName" class="form-control" @bind-Value="Model.Name" />
+        <ValidationMessage For="() => Model.Name" />
+    </div>
+
+    <div class="mb-3">
+        <label for="customerEmail" class="form-label">Email</label>
+        <InputText id="customerEmail" class="form-control" @bind-Value="Model.Email" />
+        <ValidationMessage For="() => Model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label for="customerPhoneNumber" class="form-label">Phone Number</label>
+        <InputText id="customerPhoneNumber" class="form-control" @bind-Value="Model.PhoneNumber" />
+        <ValidationMessage For="() => Model.PhoneNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label for="customerAddress" class="form-label">Address</label>
+        <InputTextArea id="customerAddress" class="form-control" @bind-Value="Model.Address" />
+        <ValidationMessage For="() => Model.Address" />
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">@SubmitLabel</button>
+        <a class="btn btn-secondary" href="customers">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public CustomerFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public string SubmitLabel { get; set; } = "Save";
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

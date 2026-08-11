@@ -1,0 +1,117 @@
+@page "/customers"
+@inject ICustomerApiClient CustomerApiClient
+
+<PageTitle>Customers</PageTitle>
+
+<h1>Customers</h1>
+
+<a class="btn btn-primary mb-3" href="customers/create">New Customer</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading customers..." />
+}
+else if (_customers is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in _customers)
+            {
+                <tr>
+                    <td>@customer.Name</td>
+                    <td>@customer.Email</td>
+                    <td>@customer.PhoneNumber</td>
+                    <td>
+                        @if (customer.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"customers/{customer.Id}/edit")">Edit</a>
+                        @if (customer.IsActive)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(customer.Id)">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(customer.Id)">Activate</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<CustomerDto>? _customers;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadCustomersAsync();
+
+    private async Task LoadCustomersAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _customers = await CustomerApiClient.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await CustomerApiClient.ActivateAsync(id);
+            await LoadCustomersAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await CustomerApiClient.DeactivateAsync(id);
+            await LoadCustomersAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

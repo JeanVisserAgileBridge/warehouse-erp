@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-ERP expansion — Supplier Management implemented; Customer Management next.
+ERP expansion — Supplier Management and Customer Management implemented; Warehouse Management next.
 ---
 
 # Completed
@@ -117,6 +117,26 @@ Includes:
 
 Supplier name uniqueness is enforced case-insensitively, reusing the existing `DuplicateNameException`.
 
+### Customer Feature
+
+- Create Customer
+- Update Customer
+- Activate Customer
+- Deactivate Customer
+- Get Customer By Id
+- Get Customers
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs
+- Repository interface
+- Application tests
+
+Customer name uniqueness is enforced case-insensitively, reusing the existing `DuplicateNameException`. Implementation follows the Supplier pattern exactly.
+
 ### Dashboard Reporting
 
 - Get Dashboard Summary
@@ -151,9 +171,11 @@ Implemented:
 - Product configuration
 - InventoryItem configuration
 - Supplier configuration
+- Customer configuration
 - CategoryRepository
 - ProductRepository
 - SupplierRepository
+- CustomerRepository
 - Dependency Injection
 - Infrastructure constants
 
@@ -163,6 +185,7 @@ Implemented:
 - InitialCreate migration
 - AddInventoryItems migration
 - AddSuppliers migration (generated, not yet applied)
+- AddCustomers migration (generated, not yet applied)
 
 ### Dapper
 
@@ -189,6 +212,7 @@ Implemented:
 - Category API
 - Product API
 - Supplier API
+- Customer API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
@@ -198,6 +222,7 @@ Verified:
 - Category CRUD
 - Product CRUD
 - Supplier CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Customer CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -223,6 +248,12 @@ Implemented:
 - SupplierDto
 - CreateSupplierRequest
 - UpdateSupplierRequest
+
+### Customers
+
+- CustomerDto
+- CreateCustomerRequest
+- UpdateCustomerRequest
 
 ### Dashboard
 
@@ -277,6 +308,16 @@ Implemented:
 - Deactivate
 
 Added under a new "Procurement" navigation section.
+
+### Customers
+
+- List
+- Create
+- Edit
+- Activate
+- Deactivate
+
+Added under a new "Sales" navigation section.
 
 Template pages were removed and replaced with ERP functionality.
 
@@ -360,11 +401,11 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Supplier Management has been implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly.
+Supplier Management and Customer Management have been implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly.
 
-The `AddSuppliers` EF Core migration has been generated but not yet applied to the database — apply it before exercising Supplier endpoints against SQL Server.
+The `AddSuppliers` and `AddCustomers` EF Core migrations have been generated but not yet applied to the database — apply them before exercising Supplier or Customer endpoints against SQL Server.
 
-Next: implement Customer Management end-to-end, following the same Category/Product/Supplier pattern.
+Next: implement Warehouse Management end-to-end, following the same Category/Product/Supplier/Customer pattern.
 
 ---
 
