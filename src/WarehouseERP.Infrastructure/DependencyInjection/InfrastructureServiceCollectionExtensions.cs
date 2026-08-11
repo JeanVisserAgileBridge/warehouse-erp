@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WarehouseERP.Application.Inventory.LowStock;
 using WarehouseERP.Application.ProductCatalog.Categories;
 using WarehouseERP.Application.ProductCatalog.Products;
+using WarehouseERP.Application.Procurement.Suppliers;
 using WarehouseERP.Application.Reporting.Dashboard;
 using WarehouseERP.Infrastructure.Persistence;
 using WarehouseERP.Infrastructure.Repositories;
@@ -24,6 +25,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IDashboardQueryService>(_ => new DashboardQueryService(connectionString));
         services.AddScoped<ILowStockInventoryQueryService>(_ => new LowStockInventoryQueryService(connectionString));
 

@@ -5,6 +5,7 @@ using WarehouseERP.Blazor.Configuration;
 using WarehouseERP.Blazor.Features.Categories.Services;
 using WarehouseERP.Blazor.Features.Dashboard.Services;
 using WarehouseERP.Blazor.Features.Products.Services;
+using WarehouseERP.Blazor.Features.Suppliers.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -26,6 +27,11 @@ builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
 });
 
 builder.Services.AddHttpClient<IDashboardApiClient, DashboardApiClient>(client =>
+{
+    client.BaseAddress = new Uri(apiOptions.BaseUrl);
+});
+
+builder.Services.AddHttpClient<ISupplierApiClient, SupplierApiClient>(client =>
 {
     client.BaseAddress = new Uri(apiOptions.BaseUrl);
 });

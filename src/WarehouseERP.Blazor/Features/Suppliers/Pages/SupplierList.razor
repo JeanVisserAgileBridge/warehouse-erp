@@ -1,0 +1,117 @@
+@page "/suppliers"
+@inject ISupplierApiClient SupplierApiClient
+
+<PageTitle>Suppliers</PageTitle>
+
+<h1>Suppliers</h1>
+
+<a class="btn btn-primary mb-3" href="suppliers/create">New Supplier</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading suppliers..." />
+}
+else if (_suppliers is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var supplier in _suppliers)
+            {
+                <tr>
+                    <td>@supplier.Name</td>
+                    <td>@supplier.Email</td>
+                    <td>@supplier.PhoneNumber</td>
+                    <td>
+                        @if (supplier.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"suppliers/{supplier.Id}/edit")">Edit</a>
+                        @if (supplier.IsActive)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(supplier.Id)">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(supplier.Id)">Activate</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<SupplierDto>? _suppliers;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadSuppliersAsync();
+
+    private async Task LoadSuppliersAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _suppliers = await SupplierApiClient.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await SupplierApiClient.ActivateAsync(id);
+            await LoadSuppliersAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await SupplierApiClient.DeactivateAsync(id);
+            await LoadSuppliersAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

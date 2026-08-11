@@ -1,0 +1,45 @@
+@page "/suppliers/create"
+@inject ISupplierApiClient SupplierApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Supplier</PageTitle>
+
+<h1>New Supplier</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<SupplierForm Model="_model" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+
+@code {
+    private readonly SupplierFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateSupplierRequest
+            {
+                Name = _model.Name,
+                Email = _model.Email,
+                PhoneNumber = _model.PhoneNumber,
+                Address = _model.Address
+            };
+
+            await SupplierApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("suppliers");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

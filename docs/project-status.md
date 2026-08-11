@@ -2,8 +2,7 @@
 
 ## Current Phase
 
-Demo preparation and final polish.
-
+ERP expansion — Supplier Management implemented; Customer Management next.
 ---
 
 # Completed
@@ -98,6 +97,26 @@ Includes:
 - Repository interface
 - Application tests
 
+### Supplier Feature
+
+- Create Supplier
+- Update Supplier
+- Activate Supplier
+- Deactivate Supplier
+- Get Supplier By Id
+- Get Suppliers
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs
+- Repository interface
+- Application tests
+
+Supplier name uniqueness is enforced case-insensitively, reusing the existing `DuplicateNameException`.
+
 ### Dashboard Reporting
 
 - Get Dashboard Summary
@@ -131,8 +150,10 @@ Implemented:
 - Category configuration
 - Product configuration
 - InventoryItem configuration
+- Supplier configuration
 - CategoryRepository
 - ProductRepository
+- SupplierRepository
 - Dependency Injection
 - Infrastructure constants
 
@@ -141,6 +162,7 @@ Implemented:
 - SQL Server
 - InitialCreate migration
 - AddInventoryItems migration
+- AddSuppliers migration (generated, not yet applied)
 
 ### Dapper
 
@@ -166,6 +188,7 @@ Implemented:
 - Global exception handling
 - Category API
 - Product API
+- Supplier API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
@@ -174,6 +197,7 @@ Verified:
 
 - Category CRUD
 - Product CRUD
+- Supplier CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -193,6 +217,12 @@ Implemented:
 - ProductDto
 - CreateProductRequest
 - UpdateProductRequest
+
+### Suppliers
+
+- SupplierDto
+- CreateSupplierRequest
+- UpdateSupplierRequest
 
 ### Dashboard
 
@@ -237,6 +267,16 @@ Implemented:
 - Activate
 - Deactivate
 - Category selection
+
+### Suppliers
+
+- List
+- Create
+- Edit
+- Activate
+- Deactivate
+
+Added under a new "Procurement" navigation section.
 
 Template pages were removed and replaced with ERP functionality.
 
@@ -320,13 +360,11 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Current focus:
+Supplier Management has been implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly.
 
-- Final README
-- Demo preparation
-- End-to-end verification
-- Seed/demo data
-- Architecture documentation
+The `AddSuppliers` EF Core migration has been generated but not yet applied to the database — apply it before exercising Supplier endpoints against SQL Server.
+
+Next: implement Customer Management end-to-end, following the same Category/Product/Supplier pattern.
 
 ---
 

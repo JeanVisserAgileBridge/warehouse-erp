@@ -13,6 +13,13 @@ using WarehouseERP.Application.ProductCatalog.Products.Commands.DeactivateProduc
 using WarehouseERP.Application.ProductCatalog.Products.Commands.UpdateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProductById;
 using WarehouseERP.Application.ProductCatalog.Products.Queries.GetProducts;
+using WarehouseERP.Application.Procurement.Suppliers;
+using WarehouseERP.Application.Procurement.Suppliers.Commands.ActivateSupplier;
+using WarehouseERP.Application.Procurement.Suppliers.Commands.CreateSupplier;
+using WarehouseERP.Application.Procurement.Suppliers.Commands.DeactivateSupplier;
+using WarehouseERP.Application.Procurement.Suppliers.Commands.UpdateSupplier;
+using WarehouseERP.Application.Procurement.Suppliers.Queries.GetSupplierById;
+using WarehouseERP.Application.Procurement.Suppliers.Queries.GetSuppliers;
 using WarehouseERP.Application.Reporting.Dashboard.Queries.GetDashboardSummary;
 using ApplicationDashboardSummary = WarehouseERP.Application.Reporting.Dashboard.DashboardSummary;
 
@@ -35,6 +42,13 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<UpdateProductCommand, ProductDto>, UpdateProductCommandHandler>();
         services.AddScoped<ICommandHandler<ActivateProductCommand, ProductDto>, ActivateProductCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateProductCommand, ProductDto>, DeactivateProductCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetSuppliersQuery, IReadOnlyList<SupplierDto>>, GetSuppliersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetSupplierByIdQuery, SupplierDto>, GetSupplierByIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateSupplierCommand, SupplierDto>, CreateSupplierCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateSupplierCommand, SupplierDto>, UpdateSupplierCommandHandler>();
+        services.AddScoped<ICommandHandler<ActivateSupplierCommand, SupplierDto>, ActivateSupplierCommandHandler>();
+        services.AddScoped<ICommandHandler<DeactivateSupplierCommand, SupplierDto>, DeactivateSupplierCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetDashboardSummaryQuery, ApplicationDashboardSummary>, GetDashboardSummaryQueryHandler>();
 
