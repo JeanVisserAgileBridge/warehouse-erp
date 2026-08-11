@@ -281,6 +281,7 @@ The initial aggregate roots are:
 * Product
 * Category
 * Warehouse
+* StorageLocation
 * InventoryItem
 * Supplier
 * PurchaseOrder

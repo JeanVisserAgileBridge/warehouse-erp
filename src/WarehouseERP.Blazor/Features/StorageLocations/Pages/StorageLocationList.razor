@@ -1,0 +1,147 @@
+@page "/storage-locations"
+@inject IStorageLocationApiClient StorageLocationApiClient
+@inject IWarehouseApiClient WarehouseApiClient
+
+<PageTitle>Storage Locations</PageTitle>
+
+<h1>Storage Locations</h1>
+
+<a class="btn btn-primary mb-3" href="storage-locations/create">New Storage Location</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading storage locations..." />
+}
+else if (_storageLocations is not null)
+{
+    <div class="mb-3" style="max-width: 320px;">
+        <label for="warehouseFilter" class="form-label">Filter by Warehouse</label>
+        <select id="warehouseFilter" class="form-select" @bind="_selectedWarehouseId">
+            <option value="">All Warehouses</option>
+            @foreach (var warehouse in _warehouses)
+            {
+                <option value="@warehouse.Id">@warehouse.Code - @warehouse.Name</option>
+            }
+        </select>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Warehouse</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var storageLocation in FilteredStorageLocations)
+            {
+                <tr>
+                    <td>@storageLocation.Code</td>
+                    <td>@GetWarehouseDisplayName(storageLocation.WarehouseId)</td>
+                    <td>@storageLocation.Description</td>
+                    <td>
+                        @if (storageLocation.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"storage-locations/{storageLocation.Id}/edit")">Edit</a>
+                        @if (storageLocation.IsActive)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(storageLocation.Id)">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(storageLocation.Id)">Activate</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<StorageLocationDto>? _storageLocations;
+    private IReadOnlyList<WarehouseDto> _warehouses = [];
+    private Dictionary<Guid, WarehouseDto> _warehousesById = new();
+    private string _selectedWarehouseId = string.Empty;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    private IEnumerable<StorageLocationDto> FilteredStorageLocations =>
+        string.IsNullOrEmpty(_selectedWarehouseId)
+            ? _storageLocations ?? []
+            : (_storageLocations ?? []).Where(storageLocation => storageLocation.WarehouseId == Guid.Parse(_selectedWarehouseId));
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var storageLocationsTask = StorageLocationApiClient.GetAllAsync();
+            var warehousesTask = WarehouseApiClient.GetAllAsync();
+
+            await Task.WhenAll(storageLocationsTask, warehousesTask);
+
+            _storageLocations = storageLocationsTask.Result;
+            _warehouses = warehousesTask.Result;
+            _warehousesById = _warehouses.ToDictionary(warehouse => warehouse.Id);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetWarehouseDisplayName(Guid warehouseId) =>
+        _warehousesById.TryGetValue(warehouseId, out var warehouse) ? $"{warehouse.Code} - {warehouse.Name}" : "Unknown";
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await StorageLocationApiClient.ActivateAsync(id);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await StorageLocationApiClient.DeactivateAsync(id);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

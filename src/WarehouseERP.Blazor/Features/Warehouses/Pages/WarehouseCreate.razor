@@ -1,0 +1,44 @@
+@page "/warehouses/create"
+@inject IWarehouseApiClient WarehouseApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Warehouse</PageTitle>
+
+<h1>New Warehouse</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<WarehouseForm Model="_model" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+
+@code {
+    private readonly WarehouseFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateWarehouseRequest
+            {
+                Code = _model.Code,
+                Name = _model.Name,
+                Address = _model.Address
+            };
+
+            await WarehouseApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("warehouses");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

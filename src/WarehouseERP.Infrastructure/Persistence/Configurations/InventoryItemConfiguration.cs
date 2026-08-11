@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WarehouseERP.Domain.Inventory;
 using WarehouseERP.Domain.ProductCatalog;
+using WarehouseERP.Domain.Warehouses;
 
 namespace WarehouseERP.Infrastructure.Persistence.Configurations;
 
@@ -37,6 +38,11 @@ public class InventoryItemConfiguration : IEntityTypeConfiguration<InventoryItem
         builder.HasOne<Product>()
             .WithMany()
             .HasForeignKey(inventoryItem => inventoryItem.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<StorageLocation>()
+            .WithMany()
+            .HasForeignKey(inventoryItem => inventoryItem.StorageLocationId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

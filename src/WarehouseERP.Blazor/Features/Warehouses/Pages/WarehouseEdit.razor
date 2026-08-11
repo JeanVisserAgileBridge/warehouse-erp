@@ -1,0 +1,83 @@
+@page "/warehouses/{Id:guid}/edit"
+@inject IWarehouseApiClient WarehouseApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Warehouse</PageTitle>
+
+<h1>Edit Warehouse</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading warehouse..." />
+}
+else if (_model is not null)
+{
+    <WarehouseForm Model="_model" SubmitLabel="Save" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private WarehouseFormModel? _model;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var warehouse = await WarehouseApiClient.GetByIdAsync(Id);
+
+            _model = new WarehouseFormModel
+            {
+                Code = warehouse.Code,
+                Name = warehouse.Name,
+                Address = warehouse.Address
+            };
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateWarehouseRequest
+            {
+                Code = _model.Code,
+                Name = _model.Name,
+                Address = _model.Address
+            };
+
+            await WarehouseApiClient.UpdateAsync(Id, request);
+            NavigationManager.NavigateTo("warehouses");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

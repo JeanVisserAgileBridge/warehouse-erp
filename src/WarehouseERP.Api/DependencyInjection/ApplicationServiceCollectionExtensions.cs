@@ -28,6 +28,21 @@ using WarehouseERP.Application.Sales.Customers.Commands.DeactivateCustomer;
 using WarehouseERP.Application.Sales.Customers.Commands.UpdateCustomer;
 using WarehouseERP.Application.Sales.Customers.Queries.GetCustomerById;
 using WarehouseERP.Application.Sales.Customers.Queries.GetCustomers;
+using WarehouseERP.Application.Warehouses.StorageLocations;
+using WarehouseERP.Application.Warehouses.StorageLocations.Commands.ActivateStorageLocation;
+using WarehouseERP.Application.Warehouses.StorageLocations.Commands.CreateStorageLocation;
+using WarehouseERP.Application.Warehouses.StorageLocations.Commands.DeactivateStorageLocation;
+using WarehouseERP.Application.Warehouses.StorageLocations.Commands.UpdateStorageLocation;
+using WarehouseERP.Application.Warehouses.StorageLocations.Queries.GetStorageLocationById;
+using WarehouseERP.Application.Warehouses.StorageLocations.Queries.GetStorageLocations;
+using WarehouseERP.Application.Warehouses.StorageLocations.Queries.GetStorageLocationsByWarehouseId;
+using WarehouseERP.Application.Warehouses.Warehouses;
+using WarehouseERP.Application.Warehouses.Warehouses.Commands.ActivateWarehouse;
+using WarehouseERP.Application.Warehouses.Warehouses.Commands.CreateWarehouse;
+using WarehouseERP.Application.Warehouses.Warehouses.Commands.DeactivateWarehouse;
+using WarehouseERP.Application.Warehouses.Warehouses.Commands.UpdateWarehouse;
+using WarehouseERP.Application.Warehouses.Warehouses.Queries.GetWarehouseById;
+using WarehouseERP.Application.Warehouses.Warehouses.Queries.GetWarehouses;
 using ApplicationDashboardSummary = WarehouseERP.Application.Reporting.Dashboard.DashboardSummary;
 
 namespace WarehouseERP.Api.DependencyInjection;
@@ -63,6 +78,21 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<UpdateCustomerCommand, CustomerDto>, UpdateCustomerCommandHandler>();
         services.AddScoped<ICommandHandler<ActivateCustomerCommand, CustomerDto>, ActivateCustomerCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateCustomerCommand, CustomerDto>, DeactivateCustomerCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetWarehousesQuery, IReadOnlyList<WarehouseDto>>, GetWarehousesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetWarehouseByIdQuery, WarehouseDto>, GetWarehouseByIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateWarehouseCommand, WarehouseDto>, CreateWarehouseCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateWarehouseCommand, WarehouseDto>, UpdateWarehouseCommandHandler>();
+        services.AddScoped<ICommandHandler<ActivateWarehouseCommand, WarehouseDto>, ActivateWarehouseCommandHandler>();
+        services.AddScoped<ICommandHandler<DeactivateWarehouseCommand, WarehouseDto>, DeactivateWarehouseCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetStorageLocationsQuery, IReadOnlyList<StorageLocationDto>>, GetStorageLocationsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetStorageLocationByIdQuery, StorageLocationDto>, GetStorageLocationByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetStorageLocationsByWarehouseIdQuery, IReadOnlyList<StorageLocationDto>>, GetStorageLocationsByWarehouseIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateStorageLocationCommand, StorageLocationDto>, CreateStorageLocationCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateStorageLocationCommand, StorageLocationDto>, UpdateStorageLocationCommandHandler>();
+        services.AddScoped<ICommandHandler<ActivateStorageLocationCommand, StorageLocationDto>, ActivateStorageLocationCommandHandler>();
+        services.AddScoped<ICommandHandler<DeactivateStorageLocationCommand, StorageLocationDto>, DeactivateStorageLocationCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetDashboardSummaryQuery, ApplicationDashboardSummary>, GetDashboardSummaryQueryHandler>();
 

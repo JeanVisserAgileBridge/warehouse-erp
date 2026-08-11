@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-ERP expansion — Supplier Management and Customer Management implemented; Warehouse Management next.
+ERP expansion — Warehouse Management complete. Next up: Inventory Management.
 ---
 
 # Completed
@@ -137,6 +137,47 @@ Includes:
 
 Customer name uniqueness is enforced case-insensitively, reusing the existing `DuplicateNameException`. Implementation follows the Supplier pattern exactly.
 
+### Warehouse Feature
+
+- Create Warehouse
+- Update Warehouse
+- Activate Warehouse
+- Deactivate Warehouse
+- Get Warehouse By Id
+- Get Warehouses
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs
+- Repository interface
+- Application tests
+
+Warehouse code uniqueness is enforced case-insensitively via a new `DuplicateCodeException`.
+
+### Storage Location Feature
+
+- Create Storage Location
+- Update Storage Location
+- Activate Storage Location
+- Deactivate Storage Location
+- Get Storage Location By Id
+- Get Storage Locations
+- Get Storage Locations By Warehouse Id
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs
+- Repository interface
+- Application tests
+
+Storage Location code uniqueness is enforced case-insensitively within a Warehouse, reusing `DuplicateCodeException`. A new Storage Location can only be assigned to an active Warehouse, enforced via a new `InactiveWarehouseException`. `WarehouseId` is immutable after creation.
+
 ### Dashboard Reporting
 
 - Get Dashboard Summary
@@ -176,8 +217,14 @@ Implemented:
 - ProductRepository
 - SupplierRepository
 - CustomerRepository
+- Warehouse configuration
+- StorageLocation configuration
+- WarehouseRepository
+- StorageLocationRepository
 - Dependency Injection
 - Infrastructure constants
+
+InventoryItemConfiguration now declares a required foreign key from `InventoryItem.StorageLocationId` to `StorageLocation`, with `Restrict` delete behaviour. No Domain change was needed.
 
 ### Database
 
@@ -186,6 +233,7 @@ Implemented:
 - AddInventoryItems migration
 - AddSuppliers migration (generated, not yet applied)
 - AddCustomers migration (generated, not yet applied)
+- AddWarehouses migration (generated, not yet applied) — creates `Warehouses` and `StorageLocations`, and adds the `InventoryItems.StorageLocationId` foreign key
 
 ### Dapper
 
@@ -213,9 +261,13 @@ Implemented:
 - Product API
 - Supplier API
 - Customer API
+- Warehouse API
+- Storage Location API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
+
+Storage Location endpoints expose a nested route, `GET /api/warehouses/{warehouseId}/storage-locations`, alongside the standard `/api/storage-locations` resource routes.
 
 Verified:
 
@@ -223,6 +275,8 @@ Verified:
 - Product CRUD
 - Supplier CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Customer CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Warehouse CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Storage Location CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -254,6 +308,18 @@ Implemented:
 - CustomerDto
 - CreateCustomerRequest
 - UpdateCustomerRequest
+
+### Warehouses
+
+- WarehouseDto
+- CreateWarehouseRequest
+- UpdateWarehouseRequest
+
+### Storage Locations
+
+- StorageLocationDto
+- CreateStorageLocationRequest
+- UpdateStorageLocationRequest
 
 ### Dashboard
 
@@ -318,6 +384,24 @@ Added under a new "Procurement" navigation section.
 - Deactivate
 
 Added under a new "Sales" navigation section.
+
+### Warehouses
+
+- List
+- Create
+- Edit
+- Activate
+- Deactivate
+
+### Storage Locations
+
+- List (with Warehouse filter and display)
+- Create (with Warehouse dropdown, restricted to active Warehouses)
+- Edit
+- Activate
+- Deactivate
+
+Added under a new "Warehouse Management" navigation section.
 
 Template pages were removed and replaced with ERP functionality.
 
@@ -401,11 +485,15 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Supplier Management and Customer Management have been implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly.
+Warehouse and Storage Location Management is implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly, including the `InventoryItem.StorageLocationId` foreign key to `StorageLocation`.
 
-The `AddSuppliers` and `AddCustomers` EF Core migrations have been generated but not yet applied to the database — apply them before exercising Supplier or Customer endpoints against SQL Server.
+Remaining before this migration is live:
 
-Next: implement Warehouse Management end-to-end, following the same Category/Product/Supplier/Customer pattern.
+- Apply the AddWarehouses migration (not yet applied)
+
+Next:
+
+- Continue with Inventory Management
 
 ---
 

@@ -7,6 +7,8 @@ using WarehouseERP.Application.ProductCatalog.Products;
 using WarehouseERP.Application.Procurement.Suppliers;
 using WarehouseERP.Application.Reporting.Dashboard;
 using WarehouseERP.Application.Sales.Customers;
+using WarehouseERP.Application.Warehouses.StorageLocations;
+using WarehouseERP.Application.Warehouses.Warehouses;
 using WarehouseERP.Infrastructure.Persistence;
 using WarehouseERP.Infrastructure.Repositories;
 using WarehouseERP.Infrastructure.Reporting;
@@ -28,6 +30,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+        services.AddScoped<IStorageLocationRepository, StorageLocationRepository>();
         services.AddScoped<IDashboardQueryService>(_ => new DashboardQueryService(connectionString));
         services.AddScoped<ILowStockInventoryQueryService>(_ => new LowStockInventoryQueryService(connectionString));
 

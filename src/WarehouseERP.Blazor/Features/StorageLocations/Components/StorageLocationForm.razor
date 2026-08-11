@@ -1,0 +1,65 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    @if (ShowWarehouseSelector)
+    {
+        <div class="mb-3">
+            <label for="storageLocationWarehouse" class="form-label">Warehouse</label>
+            <InputSelect id="storageLocationWarehouse" class="form-select" @bind-Value="Model.WarehouseId">
+                @foreach (var warehouse in Warehouses)
+                {
+                    <option value="@warehouse.Id">@warehouse.Code - @warehouse.Name</option>
+                }
+            </InputSelect>
+        </div>
+    }
+    else if (WarehouseDisplayName is not null)
+    {
+        <div class="mb-3">
+            <label class="form-label">Warehouse</label>
+            <input class="form-control" value="@WarehouseDisplayName" disabled />
+        </div>
+    }
+
+    <div class="mb-3">
+        <label for="storageLocationCode" class="form-label">Code</label>
+        <InputText id="storageLocationCode" class="form-control" @bind-Value="Model.Code" />
+        <ValidationMessage For="() => Model.Code" />
+    </div>
+
+    <div class="mb-3">
+        <label for="storageLocationDescription" class="form-label">Description</label>
+        <InputTextArea id="storageLocationDescription" class="form-control" @bind-Value="Model.Description" />
+        <ValidationMessage For="() => Model.Description" />
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">@SubmitLabel</button>
+        <a class="btn btn-secondary" href="storage-locations">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public StorageLocationFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyList<WarehouseDto> Warehouses { get; set; } = [];
+
+    [Parameter]
+    public bool ShowWarehouseSelector { get; set; } = true;
+
+    [Parameter]
+    public string? WarehouseDisplayName { get; set; }
+
+    [Parameter]
+    public string SubmitLabel { get; set; } = "Save";
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

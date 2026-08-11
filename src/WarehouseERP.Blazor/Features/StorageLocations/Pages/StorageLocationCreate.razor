@@ -1,0 +1,80 @@
+@page "/storage-locations/create"
+@inject IStorageLocationApiClient StorageLocationApiClient
+@inject IWarehouseApiClient WarehouseApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Storage Location</PageTitle>
+
+<h1>New Storage Location</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading warehouses..." />
+}
+else if (_activeWarehouses.Count == 0)
+{
+    <ErrorAlert Message="No active warehouses are available. Activate a warehouse before creating a storage location." />
+}
+else
+{
+    <StorageLocationForm Model="_model" Warehouses="_activeWarehouses" SubmitLabel="Create" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    private readonly StorageLocationFormModel _model = new();
+    private IReadOnlyList<WarehouseDto> _activeWarehouses = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var warehouses = await WarehouseApiClient.GetAllAsync();
+            _activeWarehouses = warehouses.Where(warehouse => warehouse.IsActive).ToList();
+
+            if (_activeWarehouses.Count > 0)
+            {
+                _model.WarehouseId = _activeWarehouses[0].Id;
+            }
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateStorageLocationRequest
+            {
+                WarehouseId = _model.WarehouseId,
+                Code = _model.Code,
+                Description = _model.Description
+            };
+
+            await StorageLocationApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("storage-locations");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

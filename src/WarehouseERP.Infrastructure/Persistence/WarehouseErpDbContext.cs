@@ -3,6 +3,7 @@ using WarehouseERP.Domain.Inventory;
 using WarehouseERP.Domain.ProductCatalog;
 using WarehouseERP.Domain.Procurement;
 using WarehouseERP.Domain.Sales;
+using WarehouseERP.Domain.Warehouses;
 using WarehouseERP.Infrastructure.Persistence.Configurations;
 
 namespace WarehouseERP.Infrastructure.Persistence;
@@ -24,6 +25,10 @@ public class WarehouseErpDbContext : DbContext
 
     public DbSet<Customer> Customers => Set<Customer>();
 
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+
+    public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
@@ -31,5 +36,7 @@ public class WarehouseErpDbContext : DbContext
         modelBuilder.ApplyConfiguration(new InventoryItemConfiguration());
         modelBuilder.ApplyConfiguration(new SupplierConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
+        modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
+        modelBuilder.ApplyConfiguration(new StorageLocationConfiguration());
     }
 }

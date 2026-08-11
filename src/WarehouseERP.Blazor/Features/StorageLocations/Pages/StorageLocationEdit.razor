@@ -1,0 +1,87 @@
+@page "/storage-locations/{Id:guid}/edit"
+@inject IStorageLocationApiClient StorageLocationApiClient
+@inject IWarehouseApiClient WarehouseApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Storage Location</PageTitle>
+
+<h1>Edit Storage Location</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading storage location..." />
+}
+else if (_model is not null)
+{
+    <StorageLocationForm Model="_model" ShowWarehouseSelector="false" WarehouseDisplayName="@_warehouseDisplayName" SubmitLabel="Save" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private StorageLocationFormModel? _model;
+    private string? _warehouseDisplayName;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var storageLocation = await StorageLocationApiClient.GetByIdAsync(Id);
+
+            _model = new StorageLocationFormModel
+            {
+                WarehouseId = storageLocation.WarehouseId,
+                Code = storageLocation.Code,
+                Description = storageLocation.Description
+            };
+
+            var warehouse = await WarehouseApiClient.GetByIdAsync(storageLocation.WarehouseId);
+            _warehouseDisplayName = $"{warehouse.Code} - {warehouse.Name}";
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateStorageLocationRequest
+            {
+                Code = _model.Code,
+                Description = _model.Description
+            };
+
+            await StorageLocationApiClient.UpdateAsync(Id, request);
+            NavigationManager.NavigateTo("storage-locations");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

@@ -1,0 +1,117 @@
+@page "/warehouses"
+@inject IWarehouseApiClient WarehouseApiClient
+
+<PageTitle>Warehouses</PageTitle>
+
+<h1>Warehouses</h1>
+
+<a class="btn btn-primary mb-3" href="warehouses/create">New Warehouse</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading warehouses..." />
+}
+else if (_warehouses is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var warehouse in _warehouses)
+            {
+                <tr>
+                    <td>@warehouse.Code</td>
+                    <td>@warehouse.Name</td>
+                    <td>@warehouse.Address</td>
+                    <td>
+                        @if (warehouse.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"warehouses/{warehouse.Id}/edit")">Edit</a>
+                        @if (warehouse.IsActive)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(warehouse.Id)">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(warehouse.Id)">Activate</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<WarehouseDto>? _warehouses;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadWarehousesAsync();
+
+    private async Task LoadWarehousesAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _warehouses = await WarehouseApiClient.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await WarehouseApiClient.ActivateAsync(id);
+            await LoadWarehousesAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            await WarehouseApiClient.DeactivateAsync(id);
+            await LoadWarehousesAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}
