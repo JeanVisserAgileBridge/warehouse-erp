@@ -1,4 +1,16 @@
 using WarehouseERP.Application.Common;
+using WarehouseERP.Application.Inventory.InventoryItems;
+using WarehouseERP.Application.Inventory.InventoryItems.Commands.AdjustStock;
+using WarehouseERP.Application.Inventory.InventoryItems.Commands.ChangeReorderLevel;
+using WarehouseERP.Application.Inventory.InventoryItems.Commands.CreateInventoryItem;
+using WarehouseERP.Application.Inventory.InventoryItems.Commands.IssueStock;
+using WarehouseERP.Application.Inventory.InventoryItems.Commands.ReceiveStock;
+using WarehouseERP.Application.Inventory.InventoryItems.Queries.GetInventoryByProductId;
+using WarehouseERP.Application.Inventory.InventoryItems.Queries.GetInventoryByStorageLocationId;
+using WarehouseERP.Application.Inventory.InventoryItems.Queries.GetInventoryItemById;
+using WarehouseERP.Application.Inventory.InventoryItems.Queries.GetInventoryItems;
+using WarehouseERP.Application.Inventory.StockMovements;
+using WarehouseERP.Application.Inventory.StockMovements.Queries.GetStockMovementsByInventoryItemId;
 using WarehouseERP.Application.ProductCatalog.Categories;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.ActivateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.CreateCategory;
@@ -95,6 +107,18 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<DeactivateStorageLocationCommand, StorageLocationDto>, DeactivateStorageLocationCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetDashboardSummaryQuery, ApplicationDashboardSummary>, GetDashboardSummaryQueryHandler>();
+
+        services.AddScoped<IQueryHandler<GetInventoryItemsQuery, IReadOnlyList<InventoryItemDto>>, GetInventoryItemsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetInventoryItemByIdQuery, InventoryItemDto>, GetInventoryItemByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetInventoryByProductIdQuery, IReadOnlyList<InventoryItemDto>>, GetInventoryByProductIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetInventoryByStorageLocationIdQuery, IReadOnlyList<InventoryItemDto>>, GetInventoryByStorageLocationIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateInventoryItemCommand, InventoryItemDto>, CreateInventoryItemCommandHandler>();
+        services.AddScoped<ICommandHandler<ReceiveStockCommand, InventoryItemDto>, ReceiveStockCommandHandler>();
+        services.AddScoped<ICommandHandler<IssueStockCommand, InventoryItemDto>, IssueStockCommandHandler>();
+        services.AddScoped<ICommandHandler<AdjustStockCommand, InventoryItemDto>, AdjustStockCommandHandler>();
+        services.AddScoped<ICommandHandler<ChangeReorderLevelCommand, InventoryItemDto>, ChangeReorderLevelCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetStockMovementsByInventoryItemIdQuery, IReadOnlyList<StockMovementDto>>, GetStockMovementsByInventoryItemIdQueryHandler>();
 
         return services;
     }

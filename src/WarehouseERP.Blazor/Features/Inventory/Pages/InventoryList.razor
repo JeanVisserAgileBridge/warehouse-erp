@@ -1,0 +1,96 @@
+@page "/inventory"
+@inject IInventoryApiClient InventoryApiClient
+@inject IProductApiClient ProductApiClient
+@inject IStorageLocationApiClient StorageLocationApiClient
+
+<PageTitle>Inventory</PageTitle>
+
+<h1>Inventory</h1>
+
+<a class="btn btn-primary mb-3" href="inventory/create">New Inventory Item</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading inventory..." />
+}
+else if (_inventoryItems is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Storage Location</th>
+                <th>Quantity On Hand</th>
+                <th>Reorder Level</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var inventoryItem in _inventoryItems)
+            {
+                <tr class="@(IsLowStock(inventoryItem) ? "table-danger" : null)">
+                    <td>@GetProductDisplayName(inventoryItem.ProductId)</td>
+                    <td>@GetStorageLocationDisplayName(inventoryItem.StorageLocationId)</td>
+                    <td>@inventoryItem.QuantityOnHand</td>
+                    <td>@inventoryItem.ReorderLevel</td>
+                    <td>
+                        @if (IsLowStock(inventoryItem))
+                        {
+                            <span class="badge bg-danger">Low Stock</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">OK</span>
+                        }
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@($"inventory/{inventoryItem.Id}")">Manage</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<InventoryItemDto>? _inventoryItems;
+    private Dictionary<Guid, ProductDto> _productsById = new();
+    private Dictionary<Guid, StorageLocationDto> _storageLocationsById = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var inventoryItemsTask = InventoryApiClient.GetAllAsync();
+            var productsTask = ProductApiClient.GetAllAsync();
+            var storageLocationsTask = StorageLocationApiClient.GetAllAsync();
+
+            await Task.WhenAll(inventoryItemsTask, productsTask, storageLocationsTask);
+
+            _inventoryItems = inventoryItemsTask.Result;
+            _productsById = productsTask.Result.ToDictionary(product => product.Id);
+            _storageLocationsById = storageLocationsTask.Result.ToDictionary(storageLocation => storageLocation.Id);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static bool IsLowStock(InventoryItemDto inventoryItem) => inventoryItem.QuantityOnHand <= inventoryItem.ReorderLevel;
+
+    private string GetProductDisplayName(Guid productId) =>
+        _productsById.TryGetValue(productId, out var product) ? $"{product.Sku} - {product.Name}" : "Unknown";
+
+    private string GetStorageLocationDisplayName(Guid storageLocationId) =>
+        _storageLocationsById.TryGetValue(storageLocationId, out var storageLocation) ? storageLocation.Code : "Unknown";
+}

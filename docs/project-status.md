@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-ERP expansion — Warehouse Management complete. Next up: Inventory Management.
+ERP expansion — Inventory Management complete. Next up: Purchase Orders.
 ---
 
 # Completed
@@ -198,6 +198,45 @@ Includes:
 
 Used by the Azure Function for scheduled background processing.
 
+### Inventory Feature
+
+- Create Inventory Item
+- Receive Stock
+- Issue Stock
+- Adjust Stock
+- Change Reorder Level
+- Get Inventory Items
+- Get Inventory Item By Id
+- Get Inventory By Product Id
+- Get Inventory By Storage Location Id
+- Get Stock Movements By Inventory Item Id
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs (`InventoryItemDto`, `StockMovementDto`)
+- `IInventoryItemRepository`, `IStockMovementRepository`
+- Application tests
+
+A new `IUnitOfWork` abstraction (`Application/Common/IUnitOfWork.cs`) was introduced because
+`ReceiveStock`, `IssueStock`, and `AdjustStock` must persist an `InventoryItem` change and a
+`StockMovement` together, atomically. `InventoryItemRepository` and `StockMovementRepository`
+no longer call `SaveChangesAsync` themselves — every Inventory command handler calls
+`IUnitOfWork.SaveChangesAsync` once after all repository calls, so both writes commit in a
+single database transaction. This is scoped to the Inventory feature only; every other
+repository (Product, Supplier, Customer, Warehouse, StorageLocation) keeps self-committing
+`AddAsync`/`UpdateAsync` as before.
+
+`AdjustStock`'s `StockMovement.Quantity` stores the absolute magnitude of the change
+(`|new - old|`), not the resulting quantity, since the Domain already requires movement
+quantity to be greater than zero and a valid adjustment can set stock to exactly zero. A
+zero-delta adjustment creates no movement.
+
+New exceptions: `DuplicateInventoryItemException`, `InactiveProductException`,
+`InactiveStorageLocationException` — following the existing one-exception-per-rule pattern.
+
 ---
 
 ## Infrastructure Layer
@@ -221,10 +260,16 @@ Implemented:
 - StorageLocation configuration
 - WarehouseRepository
 - StorageLocationRepository
+- StockMovementConfiguration
+- InventoryItemRepository
+- StockMovementRepository
+- UnitOfWork (implements `IUnitOfWork`)
 - Dependency Injection
 - Infrastructure constants
 
 InventoryItemConfiguration now declares a required foreign key from `InventoryItem.StorageLocationId` to `StorageLocation`, with `Restrict` delete behaviour. No Domain change was needed.
+
+StockMovementConfiguration persists `MovementType` as a string (`.HasConversion<string>()`), `Reference` at the existing `StockMovement.MaxReferenceLength` domain constant, and a required, `Restrict`-delete foreign key to `InventoryItem`.
 
 ### Database
 
@@ -234,6 +279,7 @@ InventoryItemConfiguration now declares a required foreign key from `InventoryIt
 - AddSuppliers migration (generated, not yet applied)
 - AddCustomers migration (generated, not yet applied)
 - AddWarehouses migration (generated, not yet applied) — creates `Warehouses` and `StorageLocations`, and adds the `InventoryItems.StorageLocationId` foreign key
+- AddStockMovements migration (generated, not yet applied) — creates `StockMovements`
 
 ### Dapper
 
@@ -263,6 +309,7 @@ Implemented:
 - Customer API
 - Warehouse API
 - Storage Location API
+- Inventory API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
@@ -277,6 +324,7 @@ Verified:
 - Customer CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Warehouse CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Storage Location CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Inventory CRUD and stock workflows — receive, issue, adjust, change reorder level, movement history (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -324,6 +372,17 @@ Implemented:
 ### Dashboard
 
 - DashboardSummary
+
+### Inventory
+
+- InventoryItemDto
+- StockMovementDto
+- StockMovementType (mirrors the Domain enum; Shared cannot reference Domain)
+- CreateInventoryItemRequest
+- ReceiveStockRequest
+- IssueStockRequest
+- AdjustStockRequest
+- ChangeReorderLevelRequest
 
 WarehouseERP.Shared is the contract boundary between the API and the Blazor frontend.
 
@@ -405,6 +464,15 @@ Added under a new "Warehouse Management" navigation section.
 
 Template pages were removed and replaced with ERP functionality.
 
+### Inventory
+
+- List (Product and Storage Location display, low-stock rows highlighted)
+- Create
+- Details page hosting Receive Stock, Issue Stock, Adjust Stock, and Change Reorder Level forms, plus stock movement history
+
+Added under a new "Inventory" navigation section. Product and Storage Location selectors
+reuse the existing `IProductApiClient`/`IStorageLocationApiClient`.
+
 ---
 
 ## Azure Functions
@@ -485,15 +553,18 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Warehouse and Storage Location Management is implemented end-to-end across Application, Infrastructure, API, Shared contracts, and Blazor WebAssembly, including the `InventoryItem.StorageLocationId` foreign key to `StorageLocation`.
+Inventory Management is implemented end-to-end across Application, Infrastructure, API,
+Shared contracts, and Blazor WebAssembly, including the new `IUnitOfWork` abstraction for
+atomic InventoryItem + StockMovement writes.
 
 Remaining before this migration is live:
 
-- Apply the AddWarehouses migration (not yet applied)
+- Apply the AddStockMovements migration (not yet applied), alongside the still-pending
+  AddSuppliers, AddCustomers, and AddWarehouses migrations
 
 Next:
 
-- Continue with Inventory Management
+- Continue with Purchase Orders
 
 ---
 

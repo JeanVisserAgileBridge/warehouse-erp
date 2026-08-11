@@ -1,0 +1,33 @@
+@if (Movements.Count == 0)
+{
+    <p class="text-muted">No stock movements recorded yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Occurred At</th>
+                <th>Type</th>
+                <th>Quantity</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var movement in Movements)
+            {
+                <tr>
+                    <td>@movement.OccurredAt.ToLocalTime().ToString("g")</td>
+                    <td>@movement.MovementType</td>
+                    <td>@movement.Quantity</td>
+                    <td>@movement.Reference</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<StockMovementDto> Movements { get; set; } = [];
+}

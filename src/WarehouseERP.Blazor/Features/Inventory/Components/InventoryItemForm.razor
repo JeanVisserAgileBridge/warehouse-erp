@@ -1,0 +1,63 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="inventoryItemProduct" class="form-label">Product</label>
+        <InputSelect id="inventoryItemProduct" class="form-select" @bind-Value="Model.ProductId">
+            <option value="">Select a product</option>
+            @foreach (var product in Products)
+            {
+                <option value="@product.Id">@product.Sku - @product.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => Model.ProductId" />
+    </div>
+
+    <div class="mb-3">
+        <label for="inventoryItemStorageLocation" class="form-label">Storage Location</label>
+        <InputSelect id="inventoryItemStorageLocation" class="form-select" @bind-Value="Model.StorageLocationId">
+            <option value="">Select a storage location</option>
+            @foreach (var storageLocation in StorageLocations)
+            {
+                <option value="@storageLocation.Id">@storageLocation.Code</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => Model.StorageLocationId" />
+    </div>
+
+    <div class="mb-3">
+        <label for="inventoryItemQuantityOnHand" class="form-label">Quantity On Hand</label>
+        <InputNumber id="inventoryItemQuantityOnHand" class="form-control" @bind-Value="Model.QuantityOnHand" />
+        <ValidationMessage For="() => Model.QuantityOnHand" />
+    </div>
+
+    <div class="mb-3">
+        <label for="inventoryItemReorderLevel" class="form-label">Reorder Level</label>
+        <InputNumber id="inventoryItemReorderLevel" class="form-control" @bind-Value="Model.ReorderLevel" />
+        <ValidationMessage For="() => Model.ReorderLevel" />
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">Create</button>
+        <a class="btn btn-secondary" href="inventory">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public InventoryItemFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyList<ProductDto> Products { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<StorageLocationDto> StorageLocations { get; set; } = [];
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

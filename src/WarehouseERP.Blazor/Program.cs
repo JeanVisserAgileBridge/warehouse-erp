@@ -5,6 +5,7 @@ using WarehouseERP.Blazor.Configuration;
 using WarehouseERP.Blazor.Features.Categories.Services;
 using WarehouseERP.Blazor.Features.Customers.Services;
 using WarehouseERP.Blazor.Features.Dashboard.Services;
+using WarehouseERP.Blazor.Features.Inventory.Services;
 using WarehouseERP.Blazor.Features.Products.Services;
 using WarehouseERP.Blazor.Features.StorageLocations.Services;
 using WarehouseERP.Blazor.Features.Suppliers.Services;
@@ -50,6 +51,11 @@ builder.Services.AddHttpClient<IWarehouseApiClient, WarehouseApiClient>(client =
 });
 
 builder.Services.AddHttpClient<IStorageLocationApiClient, StorageLocationApiClient>(client =>
+{
+    client.BaseAddress = new Uri(apiOptions.BaseUrl);
+});
+
+builder.Services.AddHttpClient<IInventoryApiClient, InventoryApiClient>(client =>
 {
     client.BaseAddress = new Uri(apiOptions.BaseUrl);
 });

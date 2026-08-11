@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WarehouseERP.Application.Common;
+using WarehouseERP.Application.Inventory.InventoryItems;
 using WarehouseERP.Application.Inventory.LowStock;
+using WarehouseERP.Application.Inventory.StockMovements;
 using WarehouseERP.Application.ProductCatalog.Categories;
 using WarehouseERP.Application.ProductCatalog.Products;
 using WarehouseERP.Application.Procurement.Suppliers;
@@ -32,6 +35,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStorageLocationRepository, StorageLocationRepository>();
+        services.AddScoped<IInventoryItemRepository, InventoryItemRepository>();
+        services.AddScoped<IStockMovementRepository, StockMovementRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDashboardQueryService>(_ => new DashboardQueryService(connectionString));
         services.AddScoped<ILowStockInventoryQueryService>(_ => new LowStockInventoryQueryService(connectionString));
 

@@ -1,0 +1,29 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="row g-2 align-items-start">
+        <div class="col-auto">
+            <InputNumber class="form-control" @bind-Value="Model.NewQuantityOnHand" placeholder="New quantity on hand" />
+            <ValidationMessage For="() => Model.NewQuantityOnHand" />
+        </div>
+        <div class="col-auto">
+            <InputText class="form-control" @bind-Value="Model.Reference" placeholder="Reference (optional)" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-secondary" disabled="@IsSubmitting">Adjust Stock</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public AdjustStockFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

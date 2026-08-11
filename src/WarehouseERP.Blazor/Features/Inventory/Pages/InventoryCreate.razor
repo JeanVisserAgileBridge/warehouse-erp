@@ -1,0 +1,88 @@
+@page "/inventory/create"
+@inject IInventoryApiClient InventoryApiClient
+@inject IProductApiClient ProductApiClient
+@inject IStorageLocationApiClient StorageLocationApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Inventory Item</PageTitle>
+
+<h1>New Inventory Item</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading products and storage locations..." />
+}
+else if (_activeProducts.Count == 0 || _activeStorageLocations.Count == 0)
+{
+    <ErrorAlert Message="An active product and an active storage location are required before creating an inventory item." />
+}
+else
+{
+    <InventoryItemForm Model="_model" Products="_activeProducts" StorageLocations="_activeStorageLocations" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    private readonly InventoryItemFormModel _model = new();
+    private IReadOnlyList<ProductDto> _activeProducts = [];
+    private IReadOnlyList<StorageLocationDto> _activeStorageLocations = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var productsTask = ProductApiClient.GetAllAsync();
+            var storageLocationsTask = StorageLocationApiClient.GetAllAsync();
+
+            await Task.WhenAll(productsTask, storageLocationsTask);
+
+            _activeProducts = productsTask.Result.Where(product => product.IsActive).ToList();
+            _activeStorageLocations = storageLocationsTask.Result.Where(storageLocation => storageLocation.IsActive).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model.ProductId is null || _model.StorageLocationId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateInventoryItemRequest
+            {
+                ProductId = _model.ProductId.Value,
+                StorageLocationId = _model.StorageLocationId.Value,
+                QuantityOnHand = _model.QuantityOnHand,
+                ReorderLevel = _model.ReorderLevel
+            };
+
+            var inventoryItem = await InventoryApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo($"inventory/{inventoryItem.Id}");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

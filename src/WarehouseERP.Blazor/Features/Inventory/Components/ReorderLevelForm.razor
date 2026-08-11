@@ -1,0 +1,26 @@
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="row g-2 align-items-start">
+        <div class="col-auto">
+            <InputNumber class="form-control" @bind-Value="Model.ReorderLevel" placeholder="Reorder level" />
+            <ValidationMessage For="() => Model.ReorderLevel" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary" disabled="@IsSubmitting">Change Reorder Level</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReorderLevelFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    private Task HandleValidSubmitAsync() => OnValidSubmit.InvokeAsync();
+}

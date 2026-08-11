@@ -1,0 +1,174 @@
+@page "/inventory/{Id:guid}"
+@inject IInventoryApiClient InventoryApiClient
+@inject IProductApiClient ProductApiClient
+@inject IStorageLocationApiClient StorageLocationApiClient
+
+<PageTitle>Inventory Item</PageTitle>
+
+<h1>Inventory Item</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading inventory item..." />
+}
+else if (_inventoryItem is not null)
+{
+    <dl class="row">
+        <dt class="col-sm-2">Product</dt>
+        <dd class="col-sm-10">@_productDisplayName</dd>
+
+        <dt class="col-sm-2">Storage Location</dt>
+        <dd class="col-sm-10">@_storageLocationDisplayName</dd>
+
+        <dt class="col-sm-2">Quantity On Hand</dt>
+        <dd class="col-sm-10">
+            @_inventoryItem.QuantityOnHand
+            @if (IsLowStock)
+            {
+                <span class="badge bg-danger ms-2">Low Stock</span>
+            }
+        </dd>
+
+        <dt class="col-sm-2">Reorder Level</dt>
+        <dd class="col-sm-10">@_inventoryItem.ReorderLevel</dd>
+
+        <dt class="col-sm-2">Updated At</dt>
+        <dd class="col-sm-10">@_inventoryItem.UpdatedAt.ToLocalTime().ToString("g")</dd>
+    </dl>
+
+    <hr />
+
+    <h2>Receive Stock</h2>
+    <ReceiveStockForm Model="_receiveModel" IsSubmitting="_isSubmitting" OnValidSubmit="HandleReceiveAsync" />
+
+    <h2 class="mt-4">Issue Stock</h2>
+    <IssueStockForm Model="_issueModel" IsSubmitting="_isSubmitting" OnValidSubmit="HandleIssueAsync" />
+
+    <h2 class="mt-4">Adjust Stock</h2>
+    <AdjustStockForm Model="_adjustModel" IsSubmitting="_isSubmitting" OnValidSubmit="HandleAdjustAsync" />
+
+    <h2 class="mt-4">Reorder Level</h2>
+    <ReorderLevelForm Model="_reorderLevelModel" IsSubmitting="_isSubmitting" OnValidSubmit="HandleChangeReorderLevelAsync" />
+
+    <h2 class="mt-4">Stock Movement History</h2>
+    <StockMovementHistory Movements="_movements" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private InventoryItemDto? _inventoryItem;
+    private IReadOnlyList<StockMovementDto> _movements = [];
+    private string _productDisplayName = "Unknown";
+    private string _storageLocationDisplayName = "Unknown";
+    private readonly ReceiveStockFormModel _receiveModel = new();
+    private readonly IssueStockFormModel _issueModel = new();
+    private readonly AdjustStockFormModel _adjustModel = new();
+    private readonly ReorderLevelFormModel _reorderLevelModel = new();
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private bool IsLowStock => _inventoryItem is not null && _inventoryItem.QuantityOnHand <= _inventoryItem.ReorderLevel;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var inventoryItemTask = InventoryApiClient.GetByIdAsync(Id);
+            var movementsTask = InventoryApiClient.GetMovementsAsync(Id);
+
+            await Task.WhenAll(inventoryItemTask, movementsTask);
+
+            _inventoryItem = inventoryItemTask.Result;
+            _movements = movementsTask.Result;
+            _adjustModel.NewQuantityOnHand = _inventoryItem.QuantityOnHand;
+            _reorderLevelModel.ReorderLevel = _inventoryItem.ReorderLevel;
+
+            var product = await ProductApiClient.GetByIdAsync(_inventoryItem.ProductId);
+            _productDisplayName = $"{product.Sku} - {product.Name}";
+
+            var storageLocation = await StorageLocationApiClient.GetByIdAsync(_inventoryItem.StorageLocationId);
+            _storageLocationDisplayName = storageLocation.Code;
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleReceiveAsync()
+    {
+        await RunActionAsync(() => InventoryApiClient.ReceiveAsync(Id, new ReceiveStockRequest
+        {
+            Quantity = _receiveModel.Quantity,
+            Reference = _receiveModel.Reference
+        }));
+
+        _receiveModel.Quantity = 0;
+        _receiveModel.Reference = null;
+    }
+
+    private async Task HandleIssueAsync()
+    {
+        await RunActionAsync(() => InventoryApiClient.IssueAsync(Id, new IssueStockRequest
+        {
+            Quantity = _issueModel.Quantity,
+            Reference = _issueModel.Reference
+        }));
+
+        _issueModel.Quantity = 0;
+        _issueModel.Reference = null;
+    }
+
+    private async Task HandleAdjustAsync()
+    {
+        await RunActionAsync(() => InventoryApiClient.AdjustAsync(Id, new AdjustStockRequest
+        {
+            NewQuantityOnHand = _adjustModel.NewQuantityOnHand,
+            Reference = _adjustModel.Reference
+        }));
+
+        _adjustModel.Reference = null;
+    }
+
+    private async Task HandleChangeReorderLevelAsync()
+    {
+        await RunActionAsync(() => InventoryApiClient.ChangeReorderLevelAsync(Id, new ChangeReorderLevelRequest
+        {
+            ReorderLevel = _reorderLevelModel.ReorderLevel
+        }));
+    }
+
+    private async Task RunActionAsync(Func<Task<InventoryItemDto>> action)
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            await action();
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

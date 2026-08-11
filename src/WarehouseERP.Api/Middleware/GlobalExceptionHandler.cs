@@ -44,8 +44,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         DuplicateNameException => (StatusCodes.Status409Conflict, "Conflict", exception.Message),
         DuplicateSkuException => (StatusCodes.Status409Conflict, "Conflict", exception.Message),
         DuplicateCodeException => (StatusCodes.Status409Conflict, "Conflict", exception.Message),
+        DuplicateInventoryItemException => (StatusCodes.Status409Conflict, "Conflict", exception.Message),
         InactiveCategoryException => (StatusCodes.Status400BadRequest, "Business rule violation", exception.Message),
         InactiveWarehouseException => (StatusCodes.Status400BadRequest, "Business rule violation", exception.Message),
+        InactiveProductException => (StatusCodes.Status400BadRequest, "Business rule violation", exception.Message),
+        InactiveStorageLocationException => (StatusCodes.Status400BadRequest, "Business rule violation", exception.Message),
         DomainException => (StatusCodes.Status400BadRequest, "Business rule violation", exception.Message),
         _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "An unexpected error occurred. Please try again later.")
     };
