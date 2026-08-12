@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.PurchaseOrders;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.AddPurchaseOrderLine;
 using WarehouseERP.Application.Procurement.PurchaseOrders.Commands.CancelPurchaseOrder;
@@ -18,6 +20,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/purchase-orders")]
+[Authorize(Policy = PolicyNames.PurchasingAccess)]
 public sealed class PurchaseOrdersController : ControllerBase
 {
     private readonly IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<ApplicationPurchaseOrderDto>> _getPurchaseOrders;

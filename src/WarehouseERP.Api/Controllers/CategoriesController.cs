@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Categories;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.ActivateCategory;
 using WarehouseERP.Application.ProductCatalog.Categories.Commands.CreateCategory;
@@ -56,6 +58,7 @@ public sealed class CategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<CategoryDto>> Create(CreateCategoryRequest request, CancellationToken cancellationToken)
     {
         var command = new CreateCategoryCommand
@@ -71,6 +74,7 @@ public sealed class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<CategoryDto>> Update(Guid id, UpdateCategoryRequest request, CancellationToken cancellationToken)
     {
         var command = new UpdateCategoryCommand
@@ -86,6 +90,7 @@ public sealed class CategoriesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/activate")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<CategoryDto>> Activate(Guid id, CancellationToken cancellationToken)
     {
         var category = await _activateCategory.HandleAsync(new ActivateCategoryCommand { Id = id }, cancellationToken);
@@ -94,6 +99,7 @@ public sealed class CategoriesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/deactivate")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<CategoryDto>> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         var category = await _deactivateCategory.HandleAsync(new DeactivateCategoryCommand { Id = id }, cancellationToken);

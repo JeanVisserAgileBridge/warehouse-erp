@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Products;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.ActivateProduct;
 using WarehouseERP.Application.ProductCatalog.Products.Commands.CreateProduct;
@@ -56,6 +58,7 @@ public sealed class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<ProductDto>> Create(CreateProductRequest request, CancellationToken cancellationToken)
     {
         var command = new CreateProductCommand
@@ -74,6 +77,7 @@ public sealed class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductRequest request, CancellationToken cancellationToken)
     {
         var command = new UpdateProductCommand
@@ -92,6 +96,7 @@ public sealed class ProductsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/activate")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<ProductDto>> Activate(Guid id, CancellationToken cancellationToken)
     {
         var product = await _activateProduct.HandleAsync(new ActivateProductCommand { Id = id }, cancellationToken);
@@ -100,6 +105,7 @@ public sealed class ProductsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/deactivate")]
+    [Authorize(Policy = PolicyNames.AdminOnly)]
     public async Task<ActionResult<ProductDto>> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         var product = await _deactivateProduct.HandleAsync(new DeactivateProductCommand { Id = id }, cancellationToken);

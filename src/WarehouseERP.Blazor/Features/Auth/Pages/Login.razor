@@ -1,0 +1,72 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@inject IAuthApiClient AuthApiClient
+@inject CookieAuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+<h1>Login</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<EditForm Model="_model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="loginEmail" class="form-label">Email</label>
+        <InputText id="loginEmail" class="form-control" @bind-Value="_model.Email" />
+        <ValidationMessage For="() => _model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label for="loginPassword" class="form-label">Password</label>
+        <InputText id="loginPassword" type="password" class="form-control" @bind-Value="_model.Password" />
+        <ValidationMessage For="() => _model.Password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">Log in</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromQuery]
+    [Parameter]
+    public string? ReturnUrl { get; set; }
+
+    private readonly LoginFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new LoginRequest
+            {
+                Email = _model.Email,
+                Password = _model.Password
+            };
+
+            await AuthApiClient.LoginAsync(request);
+
+            var currentUser = await AuthApiClient.GetCurrentUserAsync();
+            if (currentUser is not null)
+            {
+                AuthenticationStateProvider.NotifyUserAuthenticated(currentUser);
+            }
+
+            NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl);
+        }
+        catch (ApiException)
+        {
+            _errorMessage = "Invalid email or password.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

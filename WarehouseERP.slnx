@@ -9,7 +9,9 @@
     <Project Path="src/WarehouseERP.Shared/WarehouseERP.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/WarehouseERP.Api.Tests/WarehouseERP.Api.Tests.csproj" />
     <Project Path="tests/WarehouseERP.Application.Tests/WarehouseERP.Application.Tests.csproj" />
+    <Project Path="tests/WarehouseERP.Blazor.Tests/WarehouseERP.Blazor.Tests.csproj" />
     <Project Path="tests/WarehouseERP.Domain.Tests/WarehouseERP.Domain.Tests.csproj" />
   </Folder>
 </Solution>

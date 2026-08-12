@@ -1,0 +1,109 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject IAdminUserApiClient AdminUserApiClient
+
+<PageTitle>Users</PageTitle>
+
+<h1>Users</h1>
+
+<a class="btn btn-primary mb-3" href="admin/users/create">New User</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading users..." />
+}
+else if (_users is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Roles</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in _users)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>
+                        @foreach (var role in RoleNames.All)
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="@($"role-{user.Id}-{role}")"
+                                       checked="@_selectedRolesByUserId[user.Id].Contains(role)"
+                                       @onchange="@(e => ToggleRole(user.Id, role, (bool)e.Value!))" />
+                                <label class="form-check-label" for="@($"role-{user.Id}-{role}")">@role</label>
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SaveRolesAsync(user.Id)">Save Roles</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<UserSummaryResponse>? _users;
+    private Dictionary<string, HashSet<string>> _selectedRolesByUserId = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadUsersAsync();
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _users = await AdminUserApiClient.GetAllAsync();
+            _selectedRolesByUserId = _users.ToDictionary(u => u.Id, u => u.Roles.ToHashSet());
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ToggleRole(string userId, string role, bool isSelected)
+    {
+        var roles = _selectedRolesByUserId[userId];
+
+        if (isSelected)
+        {
+            roles.Add(role);
+        }
+        else
+        {
+            roles.Remove(role);
+        }
+    }
+
+    private async Task SaveRolesAsync(string userId)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            var request = new AssignRolesRequest { Roles = _selectedRolesByUserId[userId].ToArray() };
+            await AdminUserApiClient.AssignRolesAsync(userId, request);
+            await LoadUsersAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

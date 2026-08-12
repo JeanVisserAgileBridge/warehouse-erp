@@ -5,9 +5,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Solution-wide builds instantiate this project twice (once directly, once as a
+         WarehouseERP.Blazor.Tests dependency), and the two instances race to write the same
+         obj/compressed/*.gz fingerprint, crashing ApplyCompressionNegotiation with a duplicate
+         key. Compression only matters for published output, not local dev/test builds. -->
+    <CompressionEnabled Condition="'$(Configuration)' == 'Debug'">false</CompressionEnabled>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.10" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />

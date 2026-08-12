@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Warehouses;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Warehouses.Warehouses.Commands.ActivateWarehouse;
 using WarehouseERP.Application.Warehouses.Warehouses.Commands.CreateWarehouse;
@@ -14,6 +16,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/warehouses")]
+[Authorize(Policy = PolicyNames.WarehouseAccess)]
 public sealed class WarehousesController : ControllerBase
 {
     private readonly IQueryHandler<GetWarehousesQuery, IReadOnlyList<ApplicationWarehouseDto>> _getWarehouses;

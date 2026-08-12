@@ -28,52 +28,68 @@
             </div>
         </NavSection>
 
-        <NavSection Title="Procurement">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="suppliers">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Suppliers
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="purchase-orders">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Purchase Orders
-                </NavLink>
-            </div>
-        </NavSection>
+        <AuthorizeView Roles="Admin,Purchasing">
+            <NavSection Title="Procurement">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="suppliers">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Suppliers
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="purchase-orders">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Purchase Orders
+                    </NavLink>
+                </div>
+            </NavSection>
+        </AuthorizeView>
 
-        <NavSection Title="Sales">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="customers">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Customers
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="sales-orders">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Sales Orders
-                </NavLink>
-            </div>
-        </NavSection>
+        <AuthorizeView Roles="Admin,Sales">
+            <NavSection Title="Sales">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="customers">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Customers
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="sales-orders">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Sales Orders
+                    </NavLink>
+                </div>
+            </NavSection>
+        </AuthorizeView>
 
-        <NavSection Title="Warehouse Management">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="warehouses">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Warehouses
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="storage-locations">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Storage Locations
-                </NavLink>
-            </div>
-        </NavSection>
+        <AuthorizeView Roles="Admin,Warehouse">
+            <NavSection Title="Warehouse Management">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="warehouses">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Warehouses
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="storage-locations">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Storage Locations
+                    </NavLink>
+                </div>
+            </NavSection>
 
-        <NavSection Title="Inventory">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="inventory">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Inventory
-                </NavLink>
-            </div>
-        </NavSection>
+            <NavSection Title="Inventory">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="inventory">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Inventory
+                    </NavLink>
+                </div>
+            </NavSection>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin">
+            <NavSection Title="Administration">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/users">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Users
+                    </NavLink>
+                </div>
+            </NavSection>
+        </AuthorizeView>
     </nav>
 </div>
 

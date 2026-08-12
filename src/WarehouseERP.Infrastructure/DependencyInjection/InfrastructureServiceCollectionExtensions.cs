@@ -14,6 +14,7 @@ using WarehouseERP.Application.Sales.Customers;
 using WarehouseERP.Application.Sales.SalesOrders;
 using WarehouseERP.Application.Warehouses.StorageLocations;
 using WarehouseERP.Application.Warehouses.Warehouses;
+using WarehouseERP.Infrastructure.Identity;
 using WarehouseERP.Infrastructure.Persistence;
 using WarehouseERP.Infrastructure.Repositories;
 using WarehouseERP.Infrastructure.Reporting;
@@ -29,6 +30,9 @@ public static class InfrastructureServiceCollectionExtensions
                 $"Connection string '{InfrastructureConstants.ConnectionStringName}' was not found.");
 
         services.AddDbContext<WarehouseErpDbContext>(options =>
+            options.UseSqlServer(connectionString));
+
+        services.AddDbContext<ApplicationIdentityDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.SalesOrders;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Sales.SalesOrders.Commands.AddSalesOrderLine;
 using WarehouseERP.Application.Sales.SalesOrders.Commands.CancelSalesOrder;
@@ -18,6 +20,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/sales-orders")]
+[Authorize(Policy = PolicyNames.SalesAccess)]
 public sealed class SalesOrdersController : ControllerBase
 {
     private readonly IQueryHandler<GetSalesOrdersQuery, IReadOnlyList<ApplicationSalesOrderDto>> _getSalesOrders;

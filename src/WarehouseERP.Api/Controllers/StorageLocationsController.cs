@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.StorageLocations;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Warehouses.StorageLocations.Commands.ActivateStorageLocation;
 using WarehouseERP.Application.Warehouses.StorageLocations.Commands.CreateStorageLocation;
@@ -69,6 +71,7 @@ public sealed class StorageLocationsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = PolicyNames.WarehouseAccess)]
     public async Task<ActionResult<StorageLocationDto>> Create(CreateStorageLocationRequest request, CancellationToken cancellationToken)
     {
         var command = new CreateStorageLocationCommand
@@ -85,6 +88,7 @@ public sealed class StorageLocationsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = PolicyNames.WarehouseAccess)]
     public async Task<ActionResult<StorageLocationDto>> Update(Guid id, UpdateStorageLocationRequest request, CancellationToken cancellationToken)
     {
         var command = new UpdateStorageLocationCommand
@@ -100,6 +104,7 @@ public sealed class StorageLocationsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/activate")]
+    [Authorize(Policy = PolicyNames.WarehouseAccess)]
     public async Task<ActionResult<StorageLocationDto>> Activate(Guid id, CancellationToken cancellationToken)
     {
         var storageLocation = await _activateStorageLocation.HandleAsync(new ActivateStorageLocationCommand { Id = id }, cancellationToken);
@@ -108,6 +113,7 @@ public sealed class StorageLocationsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/deactivate")]
+    [Authorize(Policy = PolicyNames.WarehouseAccess)]
     public async Task<ActionResult<StorageLocationDto>> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         var storageLocation = await _deactivateStorageLocation.HandleAsync(new DeactivateStorageLocationCommand { Id = id }, cancellationToken);

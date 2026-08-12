@@ -1,0 +1,86 @@
+@page "/admin/users/create"
+@attribute [Authorize(Roles = "Admin")]
+@inject IAdminUserApiClient AdminUserApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New User</PageTitle>
+
+<h1>New User</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+<EditForm Model="_model" OnValidSubmit="HandleValidSubmitAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label for="userEmail" class="form-label">Email</label>
+        <InputText id="userEmail" class="form-control" @bind-Value="_model.Email" />
+        <ValidationMessage For="() => _model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label for="userPassword" class="form-label">Password</label>
+        <InputText id="userPassword" type="password" class="form-control" @bind-Value="_model.Password" />
+        <ValidationMessage For="() => _model.Password" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Roles</label>
+        @foreach (var role in RoleNames.All)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="@($"role-{role}")"
+                       checked="@_model.Roles.Contains(role)"
+                       @onchange="@(e => ToggleRole(role, (bool)e.Value!))" />
+                <label class="form-check-label" for="@($"role-{role}")">@role</label>
+            </div>
+        }
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">Create</button>
+</EditForm>
+
+@code {
+    private readonly CreateUserFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private void ToggleRole(string role, bool isSelected)
+    {
+        if (isSelected)
+        {
+            _model.Roles.Add(role);
+        }
+        else
+        {
+            _model.Roles.Remove(role);
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateUserRequest
+            {
+                Email = _model.Email,
+                Password = _model.Password,
+                Roles = _model.Roles.ToArray()
+            };
+
+            await AdminUserApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo("admin/users");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

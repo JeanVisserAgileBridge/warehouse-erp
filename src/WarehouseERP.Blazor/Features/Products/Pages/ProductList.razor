@@ -6,7 +6,9 @@
 
 <h1>Products</h1>
 
-<a class="btn btn-primary mb-3" href="products/create">New Product</a>
+<AuthorizeView Roles="Admin">
+    <a class="btn btn-primary mb-3" href="products/create">New Product</a>
+</AuthorizeView>
 
 <ErrorAlert Message="@_errorMessage" />
 
@@ -46,15 +48,17 @@ else if (_products is not null)
                         }
                     </td>
                     <td class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-primary" href="@($"products/{product.Id}/edit")">Edit</a>
-                        @if (product.IsActive)
-                        {
-                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(product.Id)">Deactivate</button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(product.Id)">Activate</button>
-                        }
+                        <AuthorizeView Roles="Admin">
+                            <a class="btn btn-sm btn-outline-primary" href="@($"products/{product.Id}/edit")">Edit</a>
+                            @if (product.IsActive)
+                            {
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(product.Id)">Deactivate</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(product.Id)">Activate</button>
+                            }
+                        </AuthorizeView>
                     </td>
                 </tr>
             }

@@ -1,4 +1,5 @@
 @page "/products/{Id:guid}/edit"
+@attribute [Authorize(Roles = "Admin")]
 @inject IProductApiClient ProductApiClient
 @inject ICategoryApiClient CategoryApiClient
 @inject NavigationManager NavigationManager

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Customers;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Sales.Customers.Commands.ActivateCustomer;
 using WarehouseERP.Application.Sales.Customers.Commands.CreateCustomer;
@@ -14,6 +16,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/customers")]
+[Authorize(Policy = PolicyNames.SalesAccess)]
 public sealed class CustomersController : ControllerBase
 {
     private readonly IQueryHandler<GetCustomersQuery, IReadOnlyList<ApplicationCustomerDto>> _getCustomers;

@@ -2,7 +2,8 @@
 
 ## Current Phase
 
-ERP expansion — Authentication & Authorization.
+Authentication & Authorization is complete (cookie-based Identity auth plus role-based
+authorization). Awaiting direction on the next ERP module.
 ---
 
 # Completed
@@ -691,6 +692,92 @@ QuantityOnHand <= ReorderLevel
 
 ---
 
+## Authentication & Authorization
+
+### Phase 1 — Authentication Foundation
+
+- ASP.NET Core Identity (`ApplicationUser : IdentityUser`, `ApplicationIdentityDbContext`) persisted
+  to the same SQL Server database via a dedicated `Migrations/Identity` history, separate from
+  `WarehouseErpDbContext`'s migrations.
+- Cookie-based authentication via `AddIdentityApiEndpoints<ApplicationUser>()`, with the default
+  scheme switched to the cookie scheme (`IdentityConstants.ApplicationScheme`) since the Blazor
+  client never authenticates via bearer token.
+- `/api/auth/*` (login, refresh, manage/*) mapped from `MapIdentityApi`; self-registration
+  (`POST /api/auth/register`) explicitly blocked via an endpoint filter; logout implemented as a
+  custom `POST /api/auth/logout` (not provided by `MapIdentityApi`) with a JSON-body CSRF
+  mitigation.
+- Every controller action requires authentication by default (`AuthorizeFilter` added globally in
+  `Program.cs`) — secure-by-default; a future public endpoint would need explicit `[AllowAnonymous]`.
+- `IdentitySeeder` seeds a single idempotent development user from
+  `Identity:SeedUser:Email`/`Identity:SeedUser:Password` configuration. No production users are
+  hardcoded.
+- `UsersController.GetMe` (`/api/users/me`) exposes the current authenticated user.
+- Blazor: `CookieAuthenticationStateProvider` (cookie-credentialed `HttpClient` via
+  `CookieCredentialsHandler`), `Login.razor`, route protection via `[Authorize]` applied globally
+  through the root `_Imports.razor` plus `AuthorizeRouteView`/`RedirectToLogin` in `App.razor`.
+
+### Phase 2 — Role-Based Authorization
+
+Four `IdentityRole`s: `Admin` (full ERP access), `Warehouse` (Warehouses, Storage Locations,
+Inventory), `Purchasing` (Suppliers, Purchase Orders), `Sales` (Customers, Sales Orders). No
+Domain `Role` entity was introduced — roles are an Identity/Infrastructure concept only.
+
+Named authorization policies (`WarehouseERP.Api.DependencyInjection.PolicyNames`/
+`AuthorizationPolicyServiceCollectionExtensions`), each OR-ing in `Admin` alongside its
+functional role so Admin always retains full access:
+
+- `AdminOnly` → `Admin`
+- `WarehouseAccess` → `Admin`, `Warehouse`
+- `PurchasingAccess` → `Admin`, `Purchasing`
+- `SalesAccess` → `Admin`, `Sales`
+
+Applied per business capability: Suppliers/Purchase Orders → `PurchasingAccess`;
+Customers/Sales Orders → `SalesAccess`; Warehouses/Inventory → `WarehouseAccess`
+(controller-level). Categories/Products/Dashboard reads and Storage Location reads are open to
+any authenticated role (Storage Location reads were deliberately broadened beyond the original
+per-role spec because Purchase Order receiving and Sales Order fulfilment both need to list
+Storage Locations); their write/mutating actions require `AdminOnly` (Categories/Products) or
+`WarehouseAccess` (Storage Locations write actions only).
+
+Role names are intentionally duplicated as const strings in two places —
+`WarehouseERP.Infrastructure.Identity.Roles` (seeding) and `WarehouseERP.Shared.Contracts.Auth.RoleNames`
+(consumed by the Api policies and by Blazor, which cannot reference Infrastructure) — mirroring
+the existing pattern of `PurchaseOrderStatus`/`SalesOrderStatus` duplicating their Domain enums in
+Shared.
+
+`RoleSeeder` idempotently creates the four roles. `IdentitySeeder` now seeds roles first, then
+finds-or-creates the seed user *by email* (previously it skipped all seeding if any user existed
+at all), then idempotently ensures that user holds the `Admin` role.
+
+`CurrentUserResponse` (and the admin-only `UserSummaryResponse`) now carry `Roles`.
+`CookieAuthenticationStateProvider` maps each role to a `ClaimTypes.Role` claim, so
+`AuthorizeView`/`[Authorize(Roles = "...")]` work natively in Blazor; `Login.razor` fetches the
+current user immediately after login so role claims are present without waiting for the next
+`GetAuthenticationStateAsync` cycle. `App.razor`'s `AuthorizeRouteView.NotAuthorized` now
+distinguishes an authenticated-but-forbidden user (shown a message) from an anonymous one
+(redirected to `/login`), since role-gated routes made that distinction necessary for the first
+time.
+
+`NavMenu` nav sections and every module's Blazor pages carry matching `AuthorizeView`/
+`[Authorize(Roles = "...")]` gating; Category/Product write controls (not full pages, since reads
+stay open) are individually wrapped in `<AuthorizeView Roles="Admin">`. Hidden navigation is UX
+only — the API policies above remain the authoritative enforcement point.
+
+New Admin-only user management (`AdminUsersController`, `api/admin/users`): list users with
+roles, create a user with an optional initial role set, replace a user's roles. Implemented by
+calling `UserManager<ApplicationUser>`/`RoleManager<IdentityRole>` directly rather than through
+Application-layer commands/handlers, since user/role administration has no Domain concept behind
+it — it's a framework/Identity storage concern, consistent with keeping Domain/Application
+Identity-free. A user may hold more than one role. Blazor UI: `Features/Admin/Users`
+(`UserList.razor`, `UserCreate.razor`), gated to `Admin`.
+
+No Identity migration was required — `ApplicationIdentityDbContext : IdentityDbContext<ApplicationUser>`
+already defaults to `IdentityRole`, and the `InitialIdentity` migration had already created
+`AspNetRoles`/`AspNetUserRoles`/`AspNetRoleClaims`; confirmed via
+`dotnet ef migrations has-pending-model-changes`.
+
+---
+
 ## Testing
 
 Completed:
@@ -700,6 +787,16 @@ Completed:
 - API verification through Swagger
 - Blazor integration testing
 - Azure Function execution verified
+- `WarehouseERP.Api.Tests` (new): authorization policy role requirements, `CurrentUserResponse`/
+  `UserSummaryResponse` role mapping
+- `WarehouseERP.Blazor.Tests` (new): `CookieAuthenticationStateProvider` role-claim mapping
+
+`AdminUsersController` itself (list/create/assign-roles) has no direct test coverage — only its
+DTO mapping is tested. `UserManager`/`RoleManager` have no seams to substitute without pulling in
+a real `DbContext`, and per this project's testing guidance, ASP.NET Core Identity internals are
+not unit tested. Covering the controller's own logic (role diffing, `NotFound`/validation
+branches) would require an integration test (e.g. `WebApplicationFactory` against an in-memory or
+test database), which hasn't been set up yet.
 
 Sales Order Application tests cover: create (valid/missing/inactive Customer, duplicate order
 number), add line (valid/missing/inactive Product, non-Draft rejection), update line, remove
@@ -709,7 +806,8 @@ rejection, missing Sales Order/Storage Location/InventoryItem, inactive Storage 
 insufficient stock, StockMovement Issue creation, single `IUnitOfWork.SaveChangesAsync` call),
 and all three queries. Dashboard Application tests cover the query handler's pass-through
 behaviour (including cancellation token propagation) and `DashboardSummary.LowStockPercentage`'s
-divide-by-zero guard. 707 tests pass across the Domain and Application test suites.
+divide-by-zero guard. 718 tests pass across the Domain, Application, Api, and Blazor test suites
+(481 Domain, 226 Application, 8 Api, 3 Blazor).
 
 All tests are currently passing.
 
@@ -758,20 +856,9 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Implement Authentication foundation using ASP.NET Core Identity for the standalone Blazor WebAssembly + ASP.NET Core API architecture.
-
-Initial scope:
-
-- ASP.NET Core Identity persistence
-- Login
-- Logout
-- Access and refresh tokens
-- Current authenticated user
-- Blazor authentication state
-- Protected API endpoints
-- Protected Blazor routes
-
-Role-based authorization will follow after the authentication foundation is verified.
+Authentication & Authorization (Phases 1 and 2) is complete. No next module has been chosen yet —
+candidates from the Future Roadmap below include Settings, Inventory reservations, Goods Receipts,
+Shipments, or Azure deployment.
 
 ---
 
@@ -787,8 +874,8 @@ Planned ERP modules:
 - Purchase Orders (complete)
 - Sales Orders (complete)
 - Reporting (complete)
+- Authentication & Authorization (complete)
 - Settings
-- Authentication & Authorization
 - Inventory reservations
 - Goods Receipts
 - Shipments

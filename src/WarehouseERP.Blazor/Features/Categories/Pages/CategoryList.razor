@@ -5,7 +5,9 @@
 
 <h1>Categories</h1>
 
-<a class="btn btn-primary mb-3" href="categories/create">New Category</a>
+<AuthorizeView Roles="Admin">
+    <a class="btn btn-primary mb-3" href="categories/create">New Category</a>
+</AuthorizeView>
 
 <ErrorAlert Message="@_errorMessage" />
 
@@ -41,15 +43,17 @@ else if (_categories is not null)
                         }
                     </td>
                     <td class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-primary" href="@($"categories/{category.Id}/edit")">Edit</a>
-                        @if (category.IsActive)
-                        {
-                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(category.Id)">Deactivate</button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(category.Id)">Activate</button>
-                        }
+                        <AuthorizeView Roles="Admin">
+                            <a class="btn btn-sm btn-outline-primary" href="@($"categories/{category.Id}/edit")">Edit</a>
+                            @if (category.IsActive)
+                            {
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateAsync(category.Id)">Deactivate</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateAsync(category.Id)">Activate</button>
+                            }
+                        </AuthorizeView>
                     </td>
                 </tr>
             }

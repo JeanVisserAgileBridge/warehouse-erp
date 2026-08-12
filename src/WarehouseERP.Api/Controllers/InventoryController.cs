@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Inventory;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Inventory.InventoryItems.Commands.AdjustStock;
 using WarehouseERP.Application.Inventory.InventoryItems.Commands.ChangeReorderLevel;
@@ -19,6 +21,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/inventory")]
+[Authorize(Policy = PolicyNames.WarehouseAccess)]
 public sealed class InventoryController : ControllerBase
 {
     private readonly IQueryHandler<GetInventoryItemsQuery, IReadOnlyList<ApplicationInventoryItemDto>> _getInventoryItems;

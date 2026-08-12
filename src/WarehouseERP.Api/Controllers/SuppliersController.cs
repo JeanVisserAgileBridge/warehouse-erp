@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseERP.Api.Contracts.Suppliers;
+using WarehouseERP.Api.DependencyInjection;
 using WarehouseERP.Application.Common;
 using WarehouseERP.Application.Procurement.Suppliers.Commands.ActivateSupplier;
 using WarehouseERP.Application.Procurement.Suppliers.Commands.CreateSupplier;
@@ -14,6 +16,7 @@ namespace WarehouseERP.Api.Controllers;
 
 [ApiController]
 [Route("api/suppliers")]
+[Authorize(Policy = PolicyNames.PurchasingAccess)]
 public sealed class SuppliersController : ControllerBase
 {
     private readonly IQueryHandler<GetSuppliersQuery, IReadOnlyList<ApplicationSupplierDto>> _getSuppliers;
