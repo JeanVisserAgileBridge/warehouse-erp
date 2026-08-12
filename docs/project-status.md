@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Reporting/Dashboard Expansion is complete. Authentication & Authorization is the likely next phase (see Immediate Next Tasks).
+ERP expansion — Authentication & Authorization.
 ---
 
 # Completed
@@ -758,13 +758,20 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Reporting/Dashboard Expansion is complete (Application, Infrastructure, API, Shared contracts,
-Blazor UI, and Application tests). The `AddSalesOrders` migration has been generated but not
-applied.
+Implement Authentication foundation using ASP.NET Core Identity for the standalone Blazor WebAssembly + ASP.NET Core API architecture.
 
-Customer, Inventory, Purchase Order, Sales Order Management, and Reporting/Dashboard Expansion are
-all complete. Authentication & Authorization is the likely next phase; applying the outstanding
-migrations against a live database remains an open, unscheduled task.
+Initial scope:
+
+- ASP.NET Core Identity persistence
+- Login
+- Logout
+- Access and refresh tokens
+- Current authenticated user
+- Blazor authentication state
+- Protected API endpoints
+- Protected Blazor routes
+
+Role-based authorization will follow after the authentication foundation is verified.
 
 ---
 
