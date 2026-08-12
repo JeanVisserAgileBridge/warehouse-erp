@@ -1,0 +1,330 @@
+@page "/sales-orders/{Id:guid}"
+@inject ISalesOrderApiClient SalesOrderApiClient
+@inject ICustomerApiClient CustomerApiClient
+@inject IProductApiClient ProductApiClient
+@inject IStorageLocationApiClient StorageLocationApiClient
+
+<PageTitle>Sales Order</PageTitle>
+
+<h1>Sales Order</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading sales order..." />
+}
+else if (_salesOrder is not null)
+{
+    <dl class="row">
+        <dt class="col-sm-2">Order Number</dt>
+        <dd class="col-sm-10">@_salesOrder.OrderNumber</dd>
+
+        <dt class="col-sm-2">Customer</dt>
+        <dd class="col-sm-10">@(_customer?.Name ?? "Unknown")</dd>
+
+        <dt class="col-sm-2">Order Date</dt>
+        <dd class="col-sm-10">@_salesOrder.OrderDate.ToString("d")</dd>
+
+        <dt class="col-sm-2">Status</dt>
+        <dd class="col-sm-10"><span class="badge @StatusBadgeClass(_salesOrder.Status)">@_salesOrder.Status</span></dd>
+
+        <dt class="col-sm-2">Notes</dt>
+        <dd class="col-sm-10">@_salesOrder.Notes</dd>
+    </dl>
+
+    <div class="d-flex gap-2 mb-3">
+        @if (CanConfirm)
+        {
+            <button class="btn btn-primary" disabled="@_isSubmitting" @onclick="HandleConfirmAsync">Confirm</button>
+        }
+        @if (CanCancel)
+        {
+            <button class="btn btn-outline-danger" disabled="@_isSubmitting" @onclick="HandleCancelOrderAsync">Cancel Order</button>
+        }
+    </div>
+
+    <h2>Lines</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Ordered</th>
+                <th>Fulfilled</th>
+                <th>Unit Price</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _salesOrder.Lines)
+            {
+                <tr>
+                    <td>@GetProductDisplayName(line.ProductId)</td>
+                    <td>@line.QuantityOrdered</td>
+                    <td>
+                        @line.QuantityFulfilled
+                        @if (line.QuantityFulfilled > 0 && line.QuantityFulfilled < line.QuantityOrdered)
+                        {
+                            <span class="badge bg-warning text-dark ms-1">Partial</span>
+                        }
+                        else if (line.QuantityFulfilled == line.QuantityOrdered)
+                        {
+                            <span class="badge bg-success ms-1">Complete</span>
+                        }
+                    </td>
+                    <td>@line.UnitPrice.ToString("C")</td>
+                    <td class="d-flex gap-2">
+                        @if (IsDraft)
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(line)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => HandleRemoveLineAsync(line.ProductId)">Remove</button>
+                        }
+                        else if (CanFulfil(line))
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => StartFulfil(line)">Fulfil</button>
+                        }
+                    </td>
+                </tr>
+                @if (_editingProductId == line.ProductId)
+                {
+                    <tr>
+                        <td colspan="5">
+                            <SalesOrderLineForm
+                                Model="_editLineModel"
+                                ProductLocked="true"
+                                LockedProductName="@GetProductDisplayName(line.ProductId)"
+                                SubmitLabel="Save"
+                                IsSubmitting="_isSubmitting"
+                                OnValidSubmit="HandleUpdateLineAsync"
+                                OnCancel="CancelEdit" />
+                        </td>
+                    </tr>
+                }
+                @if (_fulfillingProductId == line.ProductId)
+                {
+                    <tr>
+                        <td colspan="5">
+                            <FulfilSalesOrderLineForm
+                                Model="_fulfilLineModel"
+                                StorageLocations="_activeStorageLocations"
+                                IsSubmitting="_isSubmitting"
+                                OnValidSubmit="HandleFulfilAsync"
+                                OnCancel="CancelFulfil" />
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    @if (IsDraft)
+    {
+        <h2 class="mt-4">Add Line</h2>
+        @if (AvailableProductsForNewLine.Count == 0)
+        {
+            <ErrorAlert Message="All active products have already been added to this order." />
+        }
+        else
+        {
+            <SalesOrderLineForm
+                Model="_addLineModel"
+                Products="AvailableProductsForNewLine"
+                SubmitLabel="Add Line"
+                IsSubmitting="_isSubmitting"
+                OnValidSubmit="HandleAddLineAsync" />
+        }
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private SalesOrderDto? _salesOrder;
+    private CustomerDto? _customer;
+    private IReadOnlyList<ProductDto> _products = [];
+    private Dictionary<Guid, ProductDto> _productsById = new();
+    private IReadOnlyList<StorageLocationDto> _activeStorageLocations = [];
+    private readonly SalesOrderLineFormModel _addLineModel = new();
+    private SalesOrderLineFormModel _editLineModel = new();
+    private FulfilSalesOrderLineFormModel _fulfilLineModel = new();
+    private Guid? _editingProductId;
+    private Guid? _fulfillingProductId;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private bool IsDraft => _salesOrder?.Status == SalesOrderStatus.Draft;
+
+    private bool CanConfirm => IsDraft && _salesOrder!.Lines.Count > 0;
+
+    private bool CanCancel => _salesOrder is not null
+        && _salesOrder.Status != SalesOrderStatus.Fulfilled
+        && _salesOrder.Status != SalesOrderStatus.Cancelled;
+
+    private List<ProductDto> AvailableProductsForNewLine => _products
+        .Where(product => product.IsActive && _salesOrder is not null
+            && _salesOrder.Lines.All(line => line.ProductId != product.Id))
+        .ToList();
+
+    private static bool CanFulfil(SalesOrderLineDto line) => line.QuantityFulfilled < line.QuantityOrdered;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var salesOrderTask = SalesOrderApiClient.GetByIdAsync(Id);
+            var productsTask = ProductApiClient.GetAllAsync();
+            var storageLocationsTask = StorageLocationApiClient.GetAllAsync();
+
+            await Task.WhenAll(salesOrderTask, productsTask, storageLocationsTask);
+
+            _salesOrder = salesOrderTask.Result;
+            _products = productsTask.Result;
+            _productsById = _products.ToDictionary(product => product.Id);
+            _activeStorageLocations = storageLocationsTask.Result.Where(storageLocation => storageLocation.IsActive).ToList();
+
+            _customer = await CustomerApiClient.GetByIdAsync(_salesOrder.CustomerId);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetProductDisplayName(Guid productId) =>
+        _productsById.TryGetValue(productId, out var product) ? $"{product.Sku} - {product.Name}" : "Unknown";
+
+    private void StartEdit(SalesOrderLineDto line)
+    {
+        _fulfillingProductId = null;
+        _editingProductId = line.ProductId;
+        _editLineModel = new SalesOrderLineFormModel
+        {
+            ProductId = line.ProductId,
+            QuantityOrdered = line.QuantityOrdered,
+            UnitPrice = line.UnitPrice
+        };
+    }
+
+    private void CancelEdit() => _editingProductId = null;
+
+    private void StartFulfil(SalesOrderLineDto line)
+    {
+        _editingProductId = null;
+        _fulfillingProductId = line.ProductId;
+        _fulfilLineModel = new FulfilSalesOrderLineFormModel();
+    }
+
+    private void CancelFulfil() => _fulfillingProductId = null;
+
+    private async Task HandleAddLineAsync()
+    {
+        if (_addLineModel.ProductId is null)
+        {
+            return;
+        }
+
+        await RunActionAsync(() => SalesOrderApiClient.AddLineAsync(Id, new AddSalesOrderLineRequest
+        {
+            ProductId = _addLineModel.ProductId.Value,
+            QuantityOrdered = _addLineModel.QuantityOrdered,
+            UnitPrice = _addLineModel.UnitPrice
+        }));
+
+        _addLineModel.ProductId = null;
+        _addLineModel.QuantityOrdered = 0;
+        _addLineModel.UnitPrice = 0;
+    }
+
+    private async Task HandleUpdateLineAsync()
+    {
+        if (_editingProductId is null)
+        {
+            return;
+        }
+
+        var productId = _editingProductId.Value;
+
+        await RunActionAsync(() => SalesOrderApiClient.UpdateLineAsync(Id, productId, new UpdateSalesOrderLineRequest
+        {
+            QuantityOrdered = _editLineModel.QuantityOrdered,
+            UnitPrice = _editLineModel.UnitPrice
+        }));
+
+        _editingProductId = null;
+    }
+
+    private async Task HandleRemoveLineAsync(Guid productId)
+    {
+        await RunActionAsync(() => SalesOrderApiClient.RemoveLineAsync(Id, productId));
+    }
+
+    private async Task HandleFulfilAsync()
+    {
+        if (_fulfillingProductId is null || _fulfilLineModel.StorageLocationId is null)
+        {
+            return;
+        }
+
+        var productId = _fulfillingProductId.Value;
+
+        await RunActionAsync(() => SalesOrderApiClient.FulfilLineAsync(Id, productId, new FulfilSalesOrderLineRequest
+        {
+            Quantity = _fulfilLineModel.Quantity,
+            StorageLocationId = _fulfilLineModel.StorageLocationId.Value,
+            Reference = _fulfilLineModel.Reference
+        }));
+
+        _fulfillingProductId = null;
+    }
+
+    private async Task HandleConfirmAsync()
+    {
+        await RunActionAsync(() => SalesOrderApiClient.ConfirmAsync(Id));
+    }
+
+    private async Task HandleCancelOrderAsync()
+    {
+        await RunActionAsync(() => SalesOrderApiClient.CancelAsync(Id));
+    }
+
+    private async Task RunActionAsync(Func<Task<SalesOrderDto>> action)
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            await action();
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string StatusBadgeClass(SalesOrderStatus status) => status switch
+    {
+        SalesOrderStatus.Draft => "bg-secondary",
+        SalesOrderStatus.Confirmed => "bg-primary",
+        SalesOrderStatus.PartiallyFulfilled => "bg-warning text-dark",
+        SalesOrderStatus.Fulfilled => "bg-success",
+        SalesOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

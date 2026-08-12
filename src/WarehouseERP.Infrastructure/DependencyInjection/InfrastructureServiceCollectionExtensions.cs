@@ -11,6 +11,7 @@ using WarehouseERP.Application.Procurement.PurchaseOrders;
 using WarehouseERP.Application.Procurement.Suppliers;
 using WarehouseERP.Application.Reporting.Dashboard;
 using WarehouseERP.Application.Sales.Customers;
+using WarehouseERP.Application.Sales.SalesOrders;
 using WarehouseERP.Application.Warehouses.StorageLocations;
 using WarehouseERP.Application.Warehouses.Warehouses;
 using WarehouseERP.Infrastructure.Persistence;
@@ -35,6 +36,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStorageLocationRepository, StorageLocationRepository>();
         services.AddScoped<IInventoryItemRepository, InventoryItemRepository>();

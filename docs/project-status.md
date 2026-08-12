@@ -2,8 +2,7 @@
 
 ## Current Phase
 
-ERP expansion — Purchase Order Management complete. Next: Sales Order Management and/or
-applying outstanding migrations against a live database.
+Reporting/Dashboard Expansion is complete. Authentication & Authorization is the likely next phase (see Immediate Next Tasks).
 ---
 
 # Completed
@@ -190,6 +189,22 @@ Includes:
 - IDashboardQueryService abstraction
 - DashboardSummary DTO
 
+`DashboardSummary` now reports operational metrics across every module, not just the Product
+Catalog: Inventory (total items, total quantity on hand, low stock count, low stock percentage,
+total inventory value), Warehouses (total/active warehouses, total/active storage locations),
+Procurement (purchase order counts by status, open purchase order value), and Sales (sales order
+counts by status, open sales order value). `GetDashboardSummaryQuery`/`GetDashboardSummaryQueryHandler`
+remain an unchanged pass-through to `IDashboardQueryService.GetSummaryAsync` — all new metrics are
+computed in SQL (`DashboardQueryService`) except `LowStockPercentage`, which is a derived,
+get-only property on `DashboardSummary` itself (`LowStockItemCount / TotalInventoryItems`, guarded
+against divide-by-zero) so the division stays out of both SQL and Razor.
+
+Low Stock uses the existing rule unchanged: `QuantityOnHand <= ReorderLevel`. Inventory Value is
+`SUM(InventoryItems.QuantityOnHand * Products.UnitPrice)`. Open Purchase/Sales Order Value is
+`SUM((QuantityOrdered - QuantityReceived/Fulfilled) * UnitPrice)` over lines whose parent order is
+not `Received`/`Fulfilled` and not `Cancelled` — which means `Draft` orders' full line value counts
+as open value, since a Draft order is neither of those two terminal/negative statuses.
+
 ### Inventory Low Stock
 
 Includes:
@@ -291,6 +306,57 @@ New exceptions: `InactiveSupplierException`, `DuplicateOrderNumberException` —
 existing one-exception-per-rule pattern. `OrderNumber` uniqueness is enforced case-insensitively
 and globally (not scoped per Supplier), matching the `Supplier.Name`/`Warehouse.Code` pattern.
 
+### Sales Order Feature
+
+- Create Sales Order
+- Add Sales Order Line
+- Update Sales Order Line
+- Remove Sales Order Line
+- Confirm Sales Order
+- Cancel Sales Order
+- Fulfil Sales Order Line
+- Get Sales Orders
+- Get Sales Order By Id
+- Get Sales Orders By Customer Id
+
+Includes:
+
+- Commands
+- Queries
+- Handlers
+- DTOs (`SalesOrderDto`, `SalesOrderLineDto`)
+- `ISalesOrderRepository`
+- Application tests
+
+No Domain changes were required. `SalesOrder`/`SalesOrderLine` are structurally identical to
+`PurchaseOrder`/`PurchaseOrderLine` (`AddLine`, `RemoveLine`, `Confirm`, `Cancel`,
+`FulfillProduct` already supported the full workflow), so this feature is a direct structural
+clone of the Purchase Order feature with fulfilment semantics instead of receiving. The same two
+Application-level decisions apply:
+
+- There is no Domain `UpdateLine` behaviour. `UpdateSalesOrderLineCommandHandler` implements
+  "update a line while Draft" by calling `RemoveLine` then `AddLine` for the same `ProductId`,
+  for the same reasons as Purchase Order.
+- Lines are addressed by `ProductId`, not `SalesOrderLine.Id`, in commands and API routes,
+  matching how `SalesOrder.FindLine` looks lines up internally.
+
+`ISalesOrderRepository.GetByIdAsync` returns a **tracked** entity (with `Lines` included), with
+no `UpdateAsync` method, for the same change-tracking reason as `IPurchaseOrderRepository`.
+
+`FulfilSalesOrderLineCommandHandler` is the key workflow: it loads the `SalesOrder`, calls
+`FulfillProduct` (which enforces status/line-exists/quantity rules), validates the
+`StorageLocation`, finds the matching `InventoryItem` via
+`GetByProductIdAndStorageLocationIdAsync`, calls `InventoryItem.IssueStock` (which rejects
+over-issuing), creates a `StockMovement` of type `Issue`, and commits all three aggregate changes
+with a single `IUnitOfWork.SaveChangesAsync` call. Unlike Purchase Order receiving, the
+`InventoryItem` is **not** auto-created when missing — fulfilment throws `NotFoundException`,
+since stock cannot be issued from a product/location combination that has never been stocked.
+
+New exception: `InactiveCustomerException` — following the existing one-exception-per-rule
+pattern. `DuplicateOrderNumberException` (already introduced for Purchase Orders) is reused
+as-is for Sales Order number uniqueness, since it was already generic rather than
+Purchase-Order-specific.
+
 ---
 
 ## Infrastructure Layer
@@ -320,6 +386,9 @@ Implemented:
 - PurchaseOrderConfiguration
 - PurchaseOrderLineConfiguration
 - PurchaseOrderRepository
+- SalesOrderConfiguration
+- SalesOrderLineConfiguration
+- SalesOrderRepository
 - UnitOfWork (implements `IUnitOfWork`)
 - Dependency Injection
 - Infrastructure constants
@@ -329,6 +398,8 @@ InventoryItemConfiguration now declares a required foreign key from `InventoryIt
 StockMovementConfiguration persists `MovementType` as a string (`.HasConversion<string>()`), `Reference` at the existing `StockMovement.MaxReferenceLength` domain constant, and a required, `Restrict`-delete foreign key to `InventoryItem`.
 
 PurchaseOrderConfiguration maps `PurchaseOrder.Lines` (an `IReadOnlyCollection<PurchaseOrderLine>`) to the private `_lines` backing field via `Navigation(...).HasField("_lines").UsePropertyAccessMode(PropertyAccessMode.Field)`, so EF Core's change tracker observes line additions/removals made through `AddLine`/`RemoveLine` without exposing a mutable collection on the aggregate's public API. `OrderNumber` uses the same case-insensitive collation and unique index pattern as `Supplier.Name`. `PurchaseOrderLineConfiguration` gives `ProductId` a `Restrict`-delete foreign key to `Product`; the `PurchaseOrderId` foreign key is `Cascade`-delete, configured from the `PurchaseOrder` side.
+
+SalesOrderConfiguration/SalesOrderLineConfiguration mirror PurchaseOrderConfiguration/PurchaseOrderLineConfiguration exactly (private `_lines` backing field mapping, case-insensitive unique `OrderNumber` index, `Restrict`-delete FK to `Product`, `Cascade`-delete FK to the owning `SalesOrder`).
 
 ### Database
 
@@ -340,6 +411,7 @@ PurchaseOrderConfiguration maps `PurchaseOrder.Lines` (an `IReadOnlyCollection<P
 - AddWarehouses migration (generated, not yet applied) — creates `Warehouses` and `StorageLocations`, and adds the `InventoryItems.StorageLocationId` foreign key
 - AddStockMovements migration (generated, not yet applied) — creates `StockMovements`
 - AddPurchaseOrders migration (generated, not yet applied) — creates `PurchaseOrders` and `PurchaseOrderLines`
+- AddSalesOrders migration (generated, not yet applied) — creates `SalesOrders` and `SalesOrderLines`
 
 ### Dapper
 
@@ -347,7 +419,9 @@ Used exclusively for read-only queries.
 
 Implemented:
 
-- DashboardQueryService
+- DashboardQueryService — extended to a single, multi-metric summary query spanning Product
+  Catalog, Inventory, Warehouses, Procurement, and Sales, still one round trip
+  (`QuerySingleAsync<DashboardSummary>`)
 - LowStockInventoryQueryService
 
 EF Core remains responsible for transactional persistence.
@@ -371,11 +445,14 @@ Implemented:
 - Storage Location API
 - Inventory API
 - Purchase Order API
+- Sales Order API
 - Dashboard API
 - Shared contract mapping
 - CORS configuration
 
 Storage Location endpoints expose a nested route, `GET /api/warehouses/{warehouseId}/storage-locations`, alongside the standard `/api/storage-locations` resource routes. Purchase Order endpoints follow the same pattern with `GET /api/suppliers/{supplierId}/purchase-orders`. Purchase Order line routes (`.../lines/{productId}`, including `update`, `remove`, and `receive`) are addressed by `ProductId` rather than `PurchaseOrderLine.Id`, matching how the Domain aggregate itself looks up lines.
+
+Sales Order endpoints mirror Purchase Order endpoints exactly: `GET /api/customers/{customerId}/sales-orders` for the nested route, `ProductId`-addressed line routes (`add`, `update`, `remove`, `confirm`, `cancel`), and a fulfilment endpoint at `POST /api/sales-orders/{id}/lines/{productId}/fulfil` (spelled to match the task's route naming, distinct from the Domain's `FulfillProduct` method name).
 
 Verified:
 
@@ -387,6 +464,7 @@ Verified:
 - Storage Location CRUD (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Inventory CRUD and stock workflows — receive, issue, adjust, change reorder level, movement history (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Purchase Order workflow — create, add/update/remove line, submit, cancel, receive (partial and full) (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
+- Sales Order workflow — create, add/update/remove line, confirm, cancel, fulfil (partial and full) (build + automated tests; not yet exercised against a live database, since the migration has not been applied)
 - Dashboard endpoint
 
 ---
@@ -456,6 +534,16 @@ Implemented:
 - UpdatePurchaseOrderLineRequest
 - ReceivePurchaseOrderLineRequest
 
+### Sales Orders
+
+- SalesOrderDto
+- SalesOrderLineDto
+- SalesOrderStatus (mirrors the Domain enum; Shared cannot reference Domain)
+- CreateSalesOrderRequest
+- AddSalesOrderLineRequest
+- UpdateSalesOrderLineRequest
+- FulfilSalesOrderLineRequest
+
 WarehouseERP.Shared is the contract boundary between the API and the Blazor frontend.
 
 ---
@@ -476,8 +564,11 @@ Implemented:
 
 ### Dashboard
 
-- Dashboard summary cards
+- Dashboard summary cards, organized into Product Catalog, Inventory, Warehouses, Procurement,
+  and Sales sections
 - Dapper-backed statistics
+- Monetary values (Total Inventory Value, Open Purchase/Sales Order Value) displayed with
+  culture-independent `N2` numeric formatting
 
 ### Categories
 
@@ -561,6 +652,22 @@ Product, and Storage Location selectors reuse the existing `ISupplierApiClient`/
 the Application layer; the Blazor form only collects Quantity, Storage Location, and an optional
 Reference.
 
+### Sales Orders
+
+- List (Customer display, status badge)
+- Create (Customer selection, restricted to active Customers)
+- Details page hosting: order header and status, Confirm/Cancel actions, a lines table showing
+  ordered vs. fulfilled quantities with partial/complete badges, an Add Line form (Draft only),
+  inline per-line Edit/Remove (Draft only), and an inline per-line Fulfil form (Confirmed/
+  PartiallyFulfilled lines with remaining quantity), with source Storage Location selection
+
+Added under the existing "Sales" navigation section, alongside Customers. Customer, Product, and
+Storage Location selectors reuse the existing `ICustomerApiClient`/`IProductApiClient`/
+`IStorageLocationApiClient`. Fulfilment business logic (finding the `InventoryItem`, issuing
+stock, updating Sales Order status, creating the `StockMovement`) stays entirely in the
+Application layer; the Blazor form only collects Quantity, Storage Location, and an optional
+Reference. This is a direct structural clone of the Purchase Order Blazor feature.
+
 ---
 
 ## Azure Functions
@@ -593,6 +700,16 @@ Completed:
 - API verification through Swagger
 - Blazor integration testing
 - Azure Function execution verified
+
+Sales Order Application tests cover: create (valid/missing/inactive Customer, duplicate order
+number), add line (valid/missing/inactive Product, non-Draft rejection), update line, remove
+line, confirm (including no-lines rejection), cancel (including fully-fulfilled rejection),
+fulfilment (issues stock, partial/full status transitions, over-fulfilment rejection, Draft
+rejection, missing Sales Order/Storage Location/InventoryItem, inactive Storage Location,
+insufficient stock, StockMovement Issue creation, single `IUnitOfWork.SaveChangesAsync` call),
+and all three queries. Dashboard Application tests cover the query handler's pass-through
+behaviour (including cancellation token propagation) and `DashboardSummary.LowStockPercentage`'s
+divide-by-zero guard. 707 tests pass across the Domain and Application test suites.
 
 All tests are currently passing.
 
@@ -641,17 +758,13 @@ The architecture emphasizes reusable components, feature-first organization, and
 
 # Immediate Next Tasks
 
-Purchase Order Management is complete end-to-end (Application, Infrastructure, API, Shared,
-Blazor, tests). The `AddPurchaseOrders` migration has been generated but not yet applied.
+Reporting/Dashboard Expansion is complete (Application, Infrastructure, API, Shared contracts,
+Blazor UI, and Application tests). The `AddSalesOrders` migration has been generated but not
+applied.
 
-Candidates for the next phase:
-
-- Apply the outstanding migrations (`AddSuppliers`, `AddCustomers`, `AddWarehouses`,
-  `AddStockMovements`, `AddPurchaseOrders`) against a real SQL Server database and verify all
-  modules end-to-end against it.
-- Sales Order Management, following the same pattern as Purchase Orders.
-
-Supplier, Inventory, and Purchase Order Management are already complete.
+Customer, Inventory, Purchase Order, Sales Order Management, and Reporting/Dashboard Expansion are
+all complete. Authentication & Authorization is the likely next phase; applying the outstanding
+migrations against a live database remains an open, unscheduled task.
 
 ---
 
@@ -665,8 +778,8 @@ Planned ERP modules:
 - Storage Locations
 - Inventory Management
 - Purchase Orders (complete)
-- Sales Orders
-- Reporting
+- Sales Orders (complete)
+- Reporting (complete)
 - Settings
 - Authentication & Authorization
 - Inventory reservations

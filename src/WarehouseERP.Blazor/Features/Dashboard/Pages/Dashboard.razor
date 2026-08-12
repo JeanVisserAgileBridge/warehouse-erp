@@ -13,6 +13,7 @@
 }
 else if (_summary is not null)
 {
+    <h2 class="h5 mt-4">Product Catalog</h2>
     <div class="row g-3">
         <div class="col-sm-6 col-lg-4">
             <StatCard Label="Total Categories" Value="@_summary.TotalCategories.ToString()" />
@@ -28,6 +29,85 @@ else if (_summary is not null)
         </div>
         <div class="col-sm-6 col-lg-4">
             <StatCard Label="Inactive Products" Value="@_summary.InactiveProducts.ToString()" />
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Inventory</h2>
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Inventory Items" Value="@_summary.TotalInventoryItems.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Quantity On Hand" Value="@_summary.TotalQuantityOnHand.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Low Stock Item Count" Value="@_summary.LowStockItemCount.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Low Stock Percentage" Value="@(_summary.LowStockPercentage.ToString("N1") + "%")" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Inventory Value" Value="@_summary.TotalInventoryValue.ToString("N2")" />
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Warehouses</h2>
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Warehouses" Value="@_summary.TotalWarehouses.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Active Warehouses" Value="@_summary.ActiveWarehouses.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Storage Locations" Value="@_summary.TotalStorageLocations.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Active Storage Locations" Value="@_summary.ActiveStorageLocations.ToString()" />
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Procurement</h2>
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Purchase Orders" Value="@_summary.TotalPurchaseOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Draft Purchase Orders" Value="@_summary.DraftPurchaseOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Submitted Purchase Orders" Value="@_summary.SubmittedPurchaseOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Partially Received Purchase Orders" Value="@_summary.PartiallyReceivedPurchaseOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Received Purchase Orders" Value="@_summary.ReceivedPurchaseOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Open Purchase Order Value" Value="@_summary.OpenPurchaseOrderValue.ToString("N2")" />
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Sales</h2>
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Total Sales Orders" Value="@_summary.TotalSalesOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Draft Sales Orders" Value="@_summary.DraftSalesOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Confirmed Sales Orders" Value="@_summary.ConfirmedSalesOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Partially Fulfilled Sales Orders" Value="@_summary.PartiallyFulfilledSalesOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Fulfilled Sales Orders" Value="@_summary.FulfilledSalesOrders.ToString()" />
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <StatCard Label="Open Sales Order Value" Value="@_summary.OpenSalesOrderValue.ToString("N2")" />
         </div>
     </div>
 }

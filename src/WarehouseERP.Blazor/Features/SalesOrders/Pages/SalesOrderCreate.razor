@@ -1,0 +1,81 @@
+@page "/sales-orders/create"
+@inject ISalesOrderApiClient SalesOrderApiClient
+@inject ICustomerApiClient CustomerApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>New Sales Order</PageTitle>
+
+<h1>New Sales Order</h1>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading customers..." />
+}
+else if (_activeCustomers.Count == 0)
+{
+    <ErrorAlert Message="An active customer is required before creating a sales order." />
+}
+else
+{
+    <SalesOrderForm Model="_model" Customers="_activeCustomers" IsSubmitting="_isSubmitting" OnValidSubmit="HandleValidSubmitAsync" />
+}
+
+@code {
+    private readonly SalesOrderFormModel _model = new();
+    private IReadOnlyList<CustomerDto> _activeCustomers = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var customers = await CustomerApiClient.GetAllAsync();
+            _activeCustomers = customers.Where(customer => customer.IsActive).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (_model.CustomerId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new CreateSalesOrderRequest
+            {
+                CustomerId = _model.CustomerId.Value,
+                OrderNumber = _model.OrderNumber,
+                OrderDate = _model.OrderDate,
+                Notes = _model.Notes
+            };
+
+            var salesOrder = await SalesOrderApiClient.CreateAsync(request);
+            NavigationManager.NavigateTo($"sales-orders/{salesOrder.Id}");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

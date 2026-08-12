@@ -51,6 +51,17 @@ using WarehouseERP.Application.Sales.Customers.Commands.DeactivateCustomer;
 using WarehouseERP.Application.Sales.Customers.Commands.UpdateCustomer;
 using WarehouseERP.Application.Sales.Customers.Queries.GetCustomerById;
 using WarehouseERP.Application.Sales.Customers.Queries.GetCustomers;
+using WarehouseERP.Application.Sales.SalesOrders;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.AddSalesOrderLine;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.CancelSalesOrder;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.ConfirmSalesOrder;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.CreateSalesOrder;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.FulfilSalesOrderLine;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.RemoveSalesOrderLine;
+using WarehouseERP.Application.Sales.SalesOrders.Commands.UpdateSalesOrderLine;
+using WarehouseERP.Application.Sales.SalesOrders.Queries.GetSalesOrderById;
+using WarehouseERP.Application.Sales.SalesOrders.Queries.GetSalesOrders;
+using WarehouseERP.Application.Sales.SalesOrders.Queries.GetSalesOrdersByCustomerId;
 using WarehouseERP.Application.Warehouses.StorageLocations;
 using WarehouseERP.Application.Warehouses.StorageLocations.Commands.ActivateStorageLocation;
 using WarehouseERP.Application.Warehouses.StorageLocations.Commands.CreateStorageLocation;
@@ -141,6 +152,17 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, PurchaseOrderDto>, SubmitPurchaseOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CancelPurchaseOrderCommand, PurchaseOrderDto>, CancelPurchaseOrderCommandHandler>();
         services.AddScoped<ICommandHandler<ReceivePurchaseOrderLineCommand, PurchaseOrderDto>, ReceivePurchaseOrderLineCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetSalesOrdersQuery, IReadOnlyList<SalesOrderDto>>, GetSalesOrdersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetSalesOrderByIdQuery, SalesOrderDto>, GetSalesOrderByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetSalesOrdersByCustomerIdQuery, IReadOnlyList<SalesOrderDto>>, GetSalesOrdersByCustomerIdQueryHandler>();
+        services.AddScoped<ICommandHandler<CreateSalesOrderCommand, SalesOrderDto>, CreateSalesOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<AddSalesOrderLineCommand, SalesOrderDto>, AddSalesOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateSalesOrderLineCommand, SalesOrderDto>, UpdateSalesOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<RemoveSalesOrderLineCommand, SalesOrderDto>, RemoveSalesOrderLineCommandHandler>();
+        services.AddScoped<ICommandHandler<ConfirmSalesOrderCommand, SalesOrderDto>, ConfirmSalesOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<CancelSalesOrderCommand, SalesOrderDto>, CancelSalesOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<FulfilSalesOrderLineCommand, SalesOrderDto>, FulfilSalesOrderLineCommandHandler>();
 
         return services;
     }

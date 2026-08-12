@@ -1,0 +1,86 @@
+@page "/sales-orders"
+@inject ISalesOrderApiClient SalesOrderApiClient
+@inject ICustomerApiClient CustomerApiClient
+
+<PageTitle>Sales Orders</PageTitle>
+
+<h1>Sales Orders</h1>
+
+<a class="btn btn-primary mb-3" href="sales-orders/create">New Sales Order</a>
+
+<ErrorAlert Message="@_errorMessage" />
+
+@if (_isLoading)
+{
+    <LoadingIndicator Text="Loading sales orders..." />
+}
+else if (_salesOrders is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Customer</th>
+                <th>Order Date</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var salesOrder in _salesOrders)
+            {
+                <tr>
+                    <td>@salesOrder.OrderNumber</td>
+                    <td>@GetCustomerDisplayName(salesOrder.CustomerId)</td>
+                    <td>@salesOrder.OrderDate.ToString("d")</td>
+                    <td><span class="badge @StatusBadgeClass(salesOrder.Status)">@salesOrder.Status</span></td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@($"sales-orders/{salesOrder.Id}")">Manage</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<SalesOrderDto>? _salesOrders;
+    private Dictionary<Guid, CustomerDto> _customersById = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var salesOrdersTask = SalesOrderApiClient.GetAllAsync();
+            var customersTask = CustomerApiClient.GetAllAsync();
+
+            await Task.WhenAll(salesOrdersTask, customersTask);
+
+            _salesOrders = salesOrdersTask.Result;
+            _customersById = customersTask.Result.ToDictionary(customer => customer.Id);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetCustomerDisplayName(Guid customerId) =>
+        _customersById.TryGetValue(customerId, out var customer) ? customer.Name : "Unknown";
+
+    private static string StatusBadgeClass(SalesOrderStatus status) => status switch
+    {
+        SalesOrderStatus.Draft => "bg-secondary",
+        SalesOrderStatus.Confirmed => "bg-primary",
+        SalesOrderStatus.PartiallyFulfilled => "bg-warning text-dark",
+        SalesOrderStatus.Fulfilled => "bg-success",
+        SalesOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
