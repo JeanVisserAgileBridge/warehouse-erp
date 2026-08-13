@@ -47,7 +47,7 @@ else if (_summary is not null)
             <StatCard Label="Low Stock Percentage" Value="@(_summary.LowStockPercentage.ToString("N1") + "%")" />
         </div>
         <div class="col-sm-6 col-lg-4">
-            <StatCard Label="Total Inventory Value" Value="@_summary.TotalInventoryValue.ToString("N2")" />
+            <StatCard Label="Total Inventory Value" Value="@_summary.TotalInventoryValue.ToString("C")" />
         </div>
     </div>
 
@@ -85,7 +85,7 @@ else if (_summary is not null)
             <StatCard Label="Received Purchase Orders" Value="@_summary.ReceivedPurchaseOrders.ToString()" />
         </div>
         <div class="col-sm-6 col-lg-4">
-            <StatCard Label="Open Purchase Order Value" Value="@_summary.OpenPurchaseOrderValue.ToString("N2")" />
+            <StatCard Label="Open Purchase Order Value" Value="@_summary.OpenPurchaseOrderValue.ToString("C")" />
         </div>
     </div>
 
@@ -107,7 +107,7 @@ else if (_summary is not null)
             <StatCard Label="Fulfilled Sales Orders" Value="@_summary.FulfilledSalesOrders.ToString()" />
         </div>
         <div class="col-sm-6 col-lg-4">
-            <StatCard Label="Open Sales Order Value" Value="@_summary.OpenSalesOrderValue.ToString("N2")" />
+            <StatCard Label="Open Sales Order Value" Value="@_summary.OpenSalesOrderValue.ToString("C")" />
         </div>
     </div>
 }

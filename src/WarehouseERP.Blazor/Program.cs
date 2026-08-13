@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -16,6 +17,21 @@ using WarehouseERP.Blazor.Features.StorageLocations.Services;
 using WarehouseERP.Blazor.Features.Suppliers.Services;
 using WarehouseERP.Blazor.Features.Warehouses.Services;
 using WarehouseERP.Blazor.Infrastructure.Auth;
+
+// South African culture, applied globally so existing and future currency/date formatting
+// (e.g. ToString("C"), ToString("d"), ToString("g")) is correct without hardcoding "R" or
+// custom format strings on individual pages. .NET's built-in en-ZA ShortDatePattern is
+// "yyyy/MM/dd"; overriding it to "dd/MM/yyyy" is the only change needed, since ShortTimePattern
+// ("HH:mm") already matches South African conventions. The Blazor WebAssembly runtime's bundled
+// ICU/CLDR data reports en-ZA's currency symbol as "ZAR" rather than "R", so that is overridden
+// too, for the same reason as the date pattern.
+var southAfricanCulture = new CultureInfo("en-ZA");
+southAfricanCulture.DateTimeFormat.ShortDatePattern = "dd/MM/yyyy";
+southAfricanCulture.NumberFormat.CurrencySymbol = "R";
+CultureInfo.DefaultThreadCurrentCulture = southAfricanCulture;
+CultureInfo.DefaultThreadCurrentUICulture = southAfricanCulture;
+CultureInfo.CurrentCulture = southAfricanCulture;
+CultureInfo.CurrentUICulture = southAfricanCulture;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

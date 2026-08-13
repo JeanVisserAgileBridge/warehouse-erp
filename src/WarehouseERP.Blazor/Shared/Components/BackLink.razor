@@ -1,0 +1,9 @@
+<a class="btn btn-link ps-0 mb-2" href="@Href">&larr; @Text</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Href { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+}
